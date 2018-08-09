@@ -17,7 +17,7 @@ public class Matrix {
         }
     }
 
-    private static void multiplyVector(double multiplicator, List<Double> vector) {
+    public static void multiplyVector(double multiplicator, List<Double> vector) {
         for(int i=0; i<vector.size(); i++){
             vector.set(i, vector.get(i)*multiplicator);
         }
@@ -92,13 +92,13 @@ public class Matrix {
      */
     public static List<List<Double>> getUnderMatrixColumnIteration(List<List<Double>> matrix, int startIndex, int stopIndex) {
         List<List<Double>> resultMatrix = new ArrayList<>();
-        for(int col=startIndex; col < stopIndex; col++){
+        for(int col=startIndex; col <=stopIndex; col++){
             resultMatrix.add(getColumn(matrix, col));
         }
         return resultMatrix;
     }
 
-    private static List<Double> getColumn(List<List<Double>> matrix, int index) {
+    public static List<Double> getColumn(List<List<Double>> matrix, int index) {
         List<Double> col = createVector(matrix.size(), 0);
         for(int r=0; r < matrix.size(); r++){
             col.set(r,matrix.get(r).get(index));
@@ -126,5 +126,39 @@ public class Matrix {
             sum += value;
         }
         return sum;
+    }
+
+    public static List<Double> cumsum(List<Double> vector) {
+        double sum = 0;
+        List<Double> resultVector = vector;
+        for (int i=0; i<resultVector.size(); i++) {
+            sum+= resultVector.get(i);
+            resultVector.set(i,sum);
+        }
+        return resultVector;
+    }
+
+    /**
+     * Create a vector of 0 and 1.
+     * 0 at i if the element at position i is smaller than valueToTest
+     * @param vector
+     * @param valueToTest
+     * @return
+     */
+    public static List<Double> compareBiggerEqual(List<Double> vector, double valueToTest) {
+        List<Double> resultVector = vector;
+        for (int i=0; i<resultVector.size(); i++) {
+            resultVector.set(i,(resultVector.get(i)>=valueToTest? 1. : 0.));
+        }
+        return resultVector;
+    }
+
+    public static List<Double> getIndexOfNonZeros(List<Double> vector) {
+        List<Double> resultVector = new ArrayList<>();
+        for (int i=0; i<vector.size(); i++) {
+            if(vector.get(i)!=0)
+                resultVector.add((double) i);
+        }
+        return resultVector;
     }
 }

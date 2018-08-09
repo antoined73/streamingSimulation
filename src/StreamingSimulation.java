@@ -55,8 +55,8 @@ public class StreamingSimulation {
         s_ijl.set(1,tmp_matrix);
 
 
-        List<List<Double>> bw_trace = Matrix.createMatrix(((int) floor(duration/seg_duration)),1, 1);
-        Matrix.multiplyMatrix(cst_bw,bw_trace);
+        List<Double> bw_trace = Matrix.createVector(((int) floor(duration/seg_duration)), 1);
+        Matrix.multiplyVector(cst_bw,bw_trace);
 
         //---Streaming start---//
         double time_user=0; // counted in number of segments
@@ -65,21 +65,24 @@ public class StreamingSimulation {
 
         List<List<List<Double>>> buf_it = Matrix.create3DMatrix(Bmax+2,nb_of_tiles,nb_of_levels,1);
         Matrix.multiply3D(-3, buf_it); // stores the segments index, j, 1st level 0 means no seg
-        int  nb_of_startupseg = (int) floor(Bmin/2f);
+        int nb_of_startupseg = (int) floor(Bmin/2f);
 
-        List<List<Double>> page = Matrix.getPage(buf_it, 1);
+        List<List<Double>> page = Matrix.getPage(buf_it, 0);
         for(int col=0; col < nb_of_startupseg; col++){ //iterate throught the columns from 0 to nb_of_startupseg
             int currentNumber = 1;
-            for(int row=0; row < nb_of_startupseg; row++){
-                Matrix.setMatrix3DValue(buf_it, row,col,1, currentNumber);
-                currentNumber++;
+            List<Double> column = Matrix.getColumn(page,col);
+            for(int row=0; row < column.size(); row++){
+                Matrix.setMatrix3DValue(buf_it, col, row,0, currentNumber);
+                //currentNumber++;
             }
         }
         // Startup period
         List<List<Double>> played_qualities = Matrix.createMatrix(nb_of_tiles,nb_of_segments,0);
-        List<List<Double>> dlded_size = Matrix.getUnderMatrixColumnIteration( Matrix.getPage(s_ijl,1), 1 , nb_of_startupseg);
+        List<List<Double>> dlded_size = Matrix.getUnderMatrixColumnIteration( Matrix.getPage(s_ijl,1), 1-1 , nb_of_startupseg-1);
         double dlded_size_sum = Matrix.matrixSum(dlded_size);
-        System.out.println(dlded_size_sum);
+
+        //Works from beginning of file to here
+        System.out.println("before");
         time_user = computeDlDelay(dlded_size_sum,bw_trace,0); // startup delay
 
         /***
@@ -191,13 +194,16 @@ public class StreamingSimulation {
         return newCt;
     }
 
-    private double computeDlDelay(double dlded_size,List<List<Double>> bw_trace,double start_time_user){ //update time_user
-        double delay = 0;
-        //TODO
-        //size_dldable=cumsum(bw_trace(start_time_user+1:end));
-        //time_dlded=find((size_dldable>=dlded_size));
-        //time_user=time_dlded(1);
-        return delay;
+    private double computeDlDelay(double dlded_size,List<Double> bw_trace,double start_time_user){ //update time_user
+        List<Double> trace = bw_trace.subList((int) start_time_user,bw_trace.size());
+        System.out.println("before1");
+        List<Double> size_dldable= Matrix.cumsum(trace);
+        System.out.println("before2");
+        List<Double> tmp = Matrix.compareBiggerEqual(size_dldable,dlded_size);
+        System.out.println("before2");
+        List<Double> time_dlded = Matrix.getIndexOfNonZeros(tmp);
+        System.out.println("before3");
+        return time_dlded.get(0)+1;
     }
 
 
