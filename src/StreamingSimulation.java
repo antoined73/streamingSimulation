@@ -82,17 +82,17 @@ public class StreamingSimulation {
         double dlded_size_sum = Matrix.matrixSum(dlded_size);
 
         //Works from beginning of file to here
-        System.out.println("before");
         time_user = computeDlDelay(dlded_size_sum,bw_trace,0); // startup delay
 
-        /***
+
         //-- update bw estimate
-        double truedl_rate=bw_trace(1:time_user);
+        List<Double> truedl_rate = bw_trace.subList(0, (int) time_user);
         double Ct = estimateNextBtw(1,truedl_rate);
 
         List<Double> FoV_xy = Matrix.createVector(2,0);
         double total_stalltime=0;
 
+        /**
         while (seg_played<nb_of_segments){
             //-- prepare for dl decision
             FoV_xy = generateNewFOV(FoV_xy);
@@ -182,27 +182,23 @@ public class StreamingSimulation {
         return newFov;
     }
 
-    private double estimateNextBtw(double Ct, double truedl_rate) { //update Ct
-        double newCt = 0;
-        //TODO
-        /**
+    private double estimateNextBtw(double Ct, List<Double> truedl_rate) { //update Ct
+        double newCt = Ct;
+
         float alpha = 1;
-        for t=1:length(truedl_rate),
-                Ct=(1-alpha)*Ct+alpha*truedl_rate(t);
-        end
-         **/
+        for(int t=0; t<truedl_rate.size(); t++){
+                newCt = ((1-alpha)* newCt) + (alpha * truedl_rate.get(t));
+        }
         return newCt;
     }
 
     private double computeDlDelay(double dlded_size,List<Double> bw_trace,double start_time_user){ //update time_user
-        List<Double> trace = bw_trace.subList((int) start_time_user,bw_trace.size());
-        System.out.println("before1");
-        List<Double> size_dldable= Matrix.cumsum(trace);
-        System.out.println("before2");
+        List<Double> trace = new ArrayList<>(bw_trace.subList((int) start_time_user,bw_trace.size()));
+
+        List<Double> size_dldable = Matrix.cumsum(trace);
         List<Double> tmp = Matrix.compareBiggerEqual(size_dldable,dlded_size);
-        System.out.println("before2");
         List<Double> time_dlded = Matrix.getIndexOfNonZeros(tmp);
-        System.out.println("before3");
+
         return time_dlded.get(0)+1;
     }
 
