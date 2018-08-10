@@ -92,23 +92,31 @@ public class StreamingSimulation {
         List<Double> FoV_xy = Matrix.createVector(2,0);
         double total_stalltime=0;
 
-        /**
+
         while (seg_played<nb_of_segments){
             //-- prepare for dl decision
             FoV_xy = generateNewFOV(FoV_xy);
-            List<Double> dist_FoVtiles = sum((repmat(FoV_xy,nb_of_tiles,1)-tile_centers_xy).^2,2);
-            List<Double> p_ij=(Matrix.maxVector(dist_FoVtiles)-dist_FoVtiles)/sum(Matrix.maxVector(dist_FoVtiles)-dist_FoVtiles);
-            List<Double> j_ti=min(buf_it,[],3);
+            List<List<Double>> repmat = Matrix.repeatMatrix(FoV_xy,nb_of_tiles-1,0);
+            Matrix.substractValuesMatrix(repmat,tile_centers_xy);
+            Matrix.applyPowerMatrix(repmat,2);
+            List<Double> dist_FoVtiles = Matrix.sumOfEachRow(repmat);
+
+            List<Double> diff = Matrix.substract(Matrix.maxVector(dist_FoVtiles),dist_FoVtiles);
+            List<Double> p_ij = Matrix.divideMatrix(diff,Matrix.vectorSum(diff));
+
+            /**
+            List<Double> j_ti = min(buf_it,[],3);
             j_ti=min(j_ti,[],2);
             j_ti(j_ti==(nb_of_segments+3))=time_video;
-            j_ti=j_ti+1;
+            j_ti = j_ti+1;
             double j_t = Matrix.minVector(j_ti);
+
 
             //-- make dl decision
             List<List<List<Double>>> x_ijl = instant_optim(K_lookahead,deltaDownload,p_ij,s_ijl,Ct,buf_it,j_ti,Bmin,Bmax);
 
             //-- buffers states after dl finished (right before next download attempt)
-
+            /***
             dlded_size = x_ijl.*s_ijl;
             dlded_size_sum = sum(dlded_size(:));
             double time_to_dl = computeDlDelay(dlded_size_sum,bw_trace,time_user); //counted in segments
@@ -123,13 +131,14 @@ public class StreamingSimulation {
             updateBufferStates(buf_it,played_qualities,x_ijl,j_ti,time_to_dl,K_lookahead,time_video,Bmax);
 
             //-- update bw estimate
-            truedl_rate=bw_trace(time_user:time_user+time_to_dl-1);
+            truedl_rate = bw_trace.subList((int)time_user-1, ((int)(time_user+time_to_dl-1-1)) );
             Ct = estimateNextBtw(Ct,truedl_rate);
 
             //-- update times
             time_user = time_user + deltaDownload + Math.ceil(stall_time/seg_duration);
             time_video = time_video+time_to_dl-stall_time;
-        }**/
+             ***/
+        }
 
     }
 
@@ -175,10 +184,14 @@ public class StreamingSimulation {
      ***/
     }
 
-    private List<Double> generateNewFOV(List<Double>[] FoV_xy){
-        List<Double> newFov = Matrix.createVector(2,0);
-        //TODO : newFov = FoV_xy + range(1,2); // range return an array of 2 randoms numbers
-        //TODO: FoV_xy(FoV_xy>1)=FoV_xy(FoV_xy>1)-1;
+    private List<Double> generateNewFOV(List<Double> FoV_xy){
+        List<Double> newFov = new ArrayList<>(FoV_xy);
+        Matrix.addValues(newFov, Matrix.randomVector(2));
+        //FoV_xy(FoV_xy>1) = FoV_xy(FoV_xy>1)-1;
+        for (int i=0; i<newFov.size(); i++){
+            if(newFov.get(i)>1)
+                newFov.set(i,newFov.get(i)-1);
+        }
         return newFov;
     }
 

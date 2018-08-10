@@ -1,4 +1,3 @@
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -119,7 +118,7 @@ public class Matrix {
         return sum;
     }
 
-    private static double vectorSum(List<Double> vector) {
+    public static double vectorSum(List<Double> vector) {
         double sum = 0;
         for (Double value :
                 vector) {
@@ -130,7 +129,7 @@ public class Matrix {
 
     public static List<Double> cumsum(List<Double> vector) {
         double sum = 0;
-        List<Double> resultVector = vector;
+        List<Double> resultVector = new ArrayList<>(vector);
         for (int i=0; i<resultVector.size(); i++) {
             sum+= resultVector.get(i);
             resultVector.set(i,sum);
@@ -146,7 +145,7 @@ public class Matrix {
      * @return
      */
     public static List<Double> compareBiggerEqual(List<Double> vector, double valueToTest) {
-        List<Double> resultVector = vector;
+        List<Double> resultVector = new ArrayList<>(vector);
         for (int i=0; i<resultVector.size(); i++) {
             resultVector.set(i,(resultVector.get(i)>=valueToTest? 1. : 0.));
         }
@@ -158,6 +157,103 @@ public class Matrix {
         for (int i=0; i<vector.size(); i++) {
             if(vector.get(i)!=0)
                 resultVector.add((double) i);
+        }
+        return resultVector;
+    }
+
+    public static List<Double> randomVector(int size) {
+        List<Double> vector = createVector(size,0);
+        for (int i=0; i<vector.size(); i++){
+            vector.set(i, Math.random());
+        }
+        return vector;
+    }
+
+    public static void addValues(List<Double> vectorResult, List<Double> addedVector) {
+        for (int i=0; i<vectorResult.size(); i++){
+            vectorResult.set(i, vectorResult.get(i) + addedVector.get(i));
+        }
+    }
+
+    public static List<List<Double>>  repeatMatrix(List<Double> matrix, int nbCopiesOnY, int nbCopiesOnX) {
+        List<List<Double>> resultMatrix = createMatrix(0,0,0);
+        resultMatrix.add(cloneVector(matrix));
+
+        for (int x=0; x<nbCopiesOnX; x++){
+            for (int i=0; i<resultMatrix.size(); i++){
+                resultMatrix.get(i).addAll(cloneVector(resultMatrix.get(i)));
+            }
+        }
+
+        List<List<Double>> tempMatrix = cloneMatrix(resultMatrix);
+        for (int y=0; y<nbCopiesOnY; y++){
+            resultMatrix.addAll(cloneMatrix(tempMatrix));
+        }
+        return resultMatrix;
+    }
+
+    private static List<List<Double>> cloneMatrix(List<List<Double>> matrix) {
+        List<List<Double>> clonedMatrix = new ArrayList<>();
+        for (List<Double> row:
+             matrix) {
+            clonedMatrix.add(cloneVector(row));
+        }
+        return clonedMatrix;
+    }
+
+    private static List<Double> cloneVector(List<Double> vector) {
+        List<Double> clonedVector = new ArrayList<>();
+        for (Double d :
+                vector) {
+            clonedVector.add(d);
+        }
+        return clonedVector;
+    }
+
+    public static void substractValuesMatrix(List<List<Double> > resultMatrix, List<List<Double>> substractedMatrix) {
+        for (int i=0; i<resultMatrix.size(); i++){
+            substractValuesVector(resultMatrix.get(i), substractedMatrix.get(i));
+        }
+    }
+
+    private static void substractValuesVector(List<Double> resultVector, List<Double> substractedVector) {
+        for (int i=0; i<resultVector.size(); i++){
+            resultVector.set(i, resultVector.get(i) - substractedVector.get(i));
+        }
+    }
+
+    public static void applyPowerMatrix(List<List<Double>> matrix, int power) {
+        for (int i=0; i<matrix.size(); i++){
+            applyPowerVector(matrix.get(i), power);
+        }
+    }
+
+    private static void applyPowerVector(List<Double> vector, int power) {
+        for (int i=0; i<vector.size(); i++){
+            vector.set(i, Math.pow(vector.get(i),power));
+        }
+    }
+
+    public static List<Double> sumOfEachRow(List<List<Double>> matrix) {
+        List<Double> vector = createVector(matrix.size(),0);
+        for (int i=0; i<vector.size(); i++){
+            vector.set(i, vectorSum(matrix.get(i)));
+        }
+        return vector;
+    }
+
+    public static List<Double> substract(double value, List<Double> vector) {
+        List<Double> resultVector = cloneVector(vector);
+        for (int i=0; i<vector.size(); i++){
+            resultVector.set(i, value-resultVector.get(i));
+        }
+        return resultVector;
+    }
+
+    public static List<Double> divideMatrix(List<Double> vector, double divider) {
+        List<Double> resultVector = cloneVector(vector);
+        for(int i=0; i<resultVector.size(); i++){
+            resultVector.set(i, resultVector.get(i)/divider);
         }
         return resultVector;
     }
