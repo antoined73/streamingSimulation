@@ -104,16 +104,21 @@ public class StreamingSimulation {
             List<Double> diff = Matrix.substract(Matrix.maxVector(dist_FoVtiles),dist_FoVtiles);
             List<Double> p_ij = Matrix.divideMatrix(diff,Matrix.vectorSum(diff));
 
-            /**
-            List<Double> j_ti = min(buf_it,[],3);
-            j_ti=min(j_ti,[],2);
-            j_ti(j_ti==(nb_of_segments+3))=time_video;
-            j_ti = j_ti+1;
-            double j_t = Matrix.minVector(j_ti);
+
+            List<List<Double>> j_ti = Matrix.minimalMatrix(buf_it);
+            List<Double> j_ti_min = Matrix.minValueOfEachRow(j_ti);
+
+            //j_ti(j_ti==(nb_of_segments+3))=time_video;
+            List<Double> boolVector = Matrix.compareEqual(j_ti_min,(nb_of_segments+3));
+            Matrix.applyBooleanFilter(j_ti_min, boolVector);
+            double j_ti2Value = time_video; //what ?
+
+            Matrix.add(1,j_ti_min);
+            double j_t = Matrix.minVector(j_ti_min);
 
 
             //-- make dl decision
-            List<List<List<Double>>> x_ijl = instant_optim(K_lookahead,deltaDownload,p_ij,s_ijl,Ct,buf_it,j_ti,Bmin,Bmax);
+            List<List<List<Double>>> x_ijl = instant_optim(K_lookahead,deltaDownload,p_ij,s_ijl,Ct,buf_it,j_ti_min,Bmin,Bmax);
 
             //-- buffers states after dl finished (right before next download attempt)
             /***

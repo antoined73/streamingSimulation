@@ -1,3 +1,4 @@
+import javax.swing.text.html.HTMLDocument;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -152,6 +153,21 @@ public class Matrix {
         return resultVector;
     }
 
+    /**
+     * Create a vector of 0 and 1.
+     * 0 at i if the element at position i is equal than valueToTest
+     * @param vector
+     * @param valueToTest
+     * @return
+     */
+    public static List<Double> compareEqual(List<Double> vector, double valueToTest) {
+        List<Double> resultVector = new ArrayList<>(vector);
+        for (int i=0; i<resultVector.size(); i++) {
+            resultVector.set(i,(resultVector.get(i)>=valueToTest? 1. : 0.));
+        }
+        return resultVector;
+    }
+
     public static List<Double> getIndexOfNonZeros(List<Double> vector) {
         List<Double> resultVector = new ArrayList<>();
         for (int i=0; i<vector.size(); i++) {
@@ -250,10 +266,79 @@ public class Matrix {
         return resultVector;
     }
 
+    /**
+     * add value to each item of vector
+     * @param value
+     * @param vector
+     * @return
+     */
+    public static List<Double> add(double value, List<Double> vector) {
+        List<Double> resultVector = cloneVector(vector);
+        for (int i=0; i<vector.size(); i++){
+            resultVector.set(i, value+resultVector.get(i));
+        }
+        return resultVector;
+    }
+
     public static List<Double> divideMatrix(List<Double> vector, double divider) {
         List<Double> resultVector = cloneVector(vector);
         for(int i=0; i<resultVector.size(); i++){
             resultVector.set(i, resultVector.get(i)/divider);
+        }
+        return resultVector;
+    }
+
+    public static List<List<Double>> minimalMatrix(List<List<List<Double>>> matrix3D) {
+        List<List<Double>>  resultMatrix = cloneMatrix(matrix3D.get(0));
+        for (List<List<Double>> matrix :
+                matrix3D) {
+            if(compareBiggerEqual(resultMatrix, matrix)){
+                resultMatrix = matrix;
+            }
+        }
+        return resultMatrix;
+    }
+
+    /**
+     * Return true if resultMatrix is Bigger or equal than matrix
+     * @param resultMatrix
+     * @param matrix
+     * @return
+     */
+    private static boolean compareBiggerEqual(List<List<Double>> resultMatrix, List<List<Double>> matrix) {
+        return matrixSum(resultMatrix) >= matrixSum(matrix);
+    }
+
+    private static Double minMatrix(List<List<Double>> matrix) {
+        double min = matrix.get(0).get(0);
+        for (List<Double> vector :
+                matrix) {
+            Math.min(min, minVector(vector));
+        }
+        return min;
+    }
+
+    public static List<Double> minValueOfEachRow(List<List<Double>> matrix) {
+        List<Double> resultVector = new ArrayList<>();
+        for (List<Double> v :
+                matrix) {
+            resultVector.add(minVector(v));
+        }
+        return resultVector;
+    }
+
+    /**
+     * Keep only the values of the vector that are in front of 1 in the filter.
+     * @param vector
+     * @param filter
+     * @return
+     */
+    public static List<Double> applyBooleanFilter(List<Double> vector, List<Double> filter) {
+        List<Double> resultVector = new ArrayList<>();
+        for (int i=0; i<vector.size(); i++) {
+            if(filter.get(i).equals(1)){
+                resultVector.add(vector.get(i));
+            }
         }
         return resultVector;
     }
