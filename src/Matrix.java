@@ -1,4 +1,3 @@
-import javax.swing.text.html.HTMLDocument;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -341,5 +340,86 @@ public class Matrix {
             }
         }
         return resultVector;
+    }
+
+    public static void setValueAtIndexes(List<Double> vector, List<Double> indexes, double value) {
+        for (int i=0; i<indexes.size(); i++){
+            if(indexes.get(i).equals(1)){
+                vector.set(i,value);
+            }
+        }
+    }
+
+    public static List<List<Double>> multiplyElementByElementMatrix(List<List<Double>> m1, List<List<Double>> m2) {
+        List<List<Double>> resultMatrix = cloneMatrix(m1);
+        for (int i=0; i<resultMatrix.size(); i++){
+            resultMatrix.set(i, multiplyElementByElementVector(m1.get(i),m2.get(i)) );
+        }
+        return resultMatrix;
+    }
+
+    private static List<Double> multiplyElementByElementVector(List<Double> v1, List<Double> v2) {
+        List<Double> resultVector = cloneVector(v1);
+        for (int i=0; i<resultVector.size(); i++){
+            resultVector.set(i, v1.get(i) * v2.get(i) );
+        }
+        return resultVector;
+    }
+
+    public static void setValueInMatrix3DToElementsSmallerThan(List<List<List<Double>>> matrix3D, double compareValue, double value) {
+        for (List<List<Double>> matrix :
+                matrix3D) {
+            setValueInMatrixToElementsSmallerThan(matrix, compareValue, value);
+        }
+    }
+
+    private static void setValueInMatrixToElementsSmallerThan(List<List<Double>> matrix, double compareValue, double value) {
+        for (List<Double> vector :
+                matrix) {
+            setValueInVectorToElementsSmallerThan(vector, compareValue, value);
+        }
+    }
+
+    private static void setValueInVectorToElementsSmallerThan(List<Double> vector, double compareValue, double value) {
+        for (int i=0; i<vector.size(); i++) {
+            if(vector.get(i) < compareValue){
+                vector.set(i,value);
+            }
+        }
+    }
+
+    public static void setValueInMatrix3DToElementsEqualTo(List<List<List<Double>>> matrix3D, double compareValue, double value) {
+        for (List<List<Double>> matrix :
+                matrix3D) {
+            setValueInMatrixToElementsEqualTo(matrix, compareValue, value);
+        }
+    }
+
+    private static void setValueInMatrixToElementsEqualTo(List<List<Double>> matrix, double compareValue, double value) {
+        for (List<Double> vector :
+                matrix) {
+            setValueInVectorToElementsEqualTo(vector, compareValue, value);
+        }
+    }
+
+    private static void setValueInVectorToElementsEqualTo(List<Double> vector, double compareValue, double value) {
+        for (int i=0; i<vector.size(); i++) {
+            if(vector.get(i) == compareValue){
+                vector.set(i,value);
+            }
+        }
+    }
+
+    public static List<List<Double>> sumOfEachMatrix(List<List<List<Double>>> matrix3D) {
+        List<List<Double>> resultMatrix = createMatrix(matrix3D.get(0).size(),matrix3D.get(0).get(0).size(),0);
+        for (List<List<Double>> matrix :
+                matrix3D) {
+            for (int y=0; y<matrix.size(); y++) {
+                for (int x=0; x<matrix.get(y).size(); x++) {
+                    resultMatrix.get(y).set(x,matrix.get(y).get(x));
+                }
+            }
+        }
+        return  resultMatrix;
     }
 }

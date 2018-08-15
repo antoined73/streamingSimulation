@@ -110,8 +110,8 @@ public class StreamingSimulation {
 
             //j_ti(j_ti==(nb_of_segments+3))=time_video;
             List<Double> boolVector = Matrix.compareEqual(j_ti_min,(nb_of_segments+3));
-            Matrix.applyBooleanFilter(j_ti_min, boolVector);
-            double j_ti2Value = time_video; //what ?
+            List<Double> indexes = Matrix.applyBooleanFilter(j_ti_min, boolVector);
+            Matrix.setValueAtIndexes(j_ti_min,indexes,time_video);
 
             Matrix.add(1,j_ti_min);
             double j_t = Matrix.minVector(j_ti_min);
@@ -121,16 +121,20 @@ public class StreamingSimulation {
             List<List<List<Double>>> x_ijl = instant_optim(K_lookahead,deltaDownload,p_ij,s_ijl,Ct,buf_it,j_ti_min,Bmin,Bmax);
 
             //-- buffers states after dl finished (right before next download attempt)
-            /***
-            dlded_size = x_ijl.*s_ijl;
-            dlded_size_sum = sum(dlded_size(:));
+
+            dlded_size = Matrix.multiplyElementByElementMatrix(x_ijl.get(0),s_ijl.get(0));
+
+            dlded_size_sum = Matrix.matrixSum(dlded_size);
             double time_to_dl = computeDlDelay(dlded_size_sum,bw_trace,time_user); //counted in segments
+
             //-- temporary transform
             List<List<List<Double>>> buf_tmp = buf_it;
-            buf_tmp(buf_tmp < (nb_of_segments+3))=1;
-            buf_tmp(buf_tmp == (nb_of_segments+3))=0;
+            Matrix.setValueInMatrix3DToElementsSmallerThan(buf_tmp,(nb_of_segments+3),1);
+            Matrix.setValueInMatrix3DToElementsEqualTo(buf_tmp,(nb_of_segments+3),0);
+
             //-- end of temporary transform
-            double cursizebuf_min= Math.min(sum(sum(buf_tmp,3),2));
+
+            double cursizebuf_min= Matrix.minVector(Matrix.sumOfEachRow(Matrix.sumOfEachMatrix(buf_tmp)));
             double stall_time = Math.max(0,time_to_dl-cursizebuf_min);
             total_stalltime=total_stalltime+stall_time;
             updateBufferStates(buf_it,played_qualities,x_ijl,j_ti,time_to_dl,K_lookahead,time_video,Bmax);
@@ -142,13 +146,13 @@ public class StreamingSimulation {
             //-- update times
             time_user = time_user + deltaDownload + Math.ceil(stall_time/seg_duration);
             time_video = time_video+time_to_dl-stall_time;
-             ***/
+
         }
 
     }
 
 
-    private void updateBufferStates(double buf_it,double played_qualities,double x_ijl,double j_ti,
+    private void updateBufferStates(List<List<List<Double>>>  buf_it, List<List<Double>> played_qualities, List<List<List<Double>>>  x_ijl, List<List<Double>>  j_ti,
                                     double time_to_dl,double K_lookahead,double time_video,double Bmax){ //update buf_it and played_qualities
         /***
         nb_of_tiles=size(x_ijl,1);
