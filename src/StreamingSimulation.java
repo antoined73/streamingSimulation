@@ -137,7 +137,7 @@ public class StreamingSimulation {
             double cursizebuf_min= Matrix.minVector(Matrix.sumOfEachRow(Matrix.sumOfEachMatrix(buf_tmp)));
             double stall_time = Math.max(0,time_to_dl-cursizebuf_min);
             total_stalltime=total_stalltime+stall_time;
-            updateBufferStates(buf_it,played_qualities,x_ijl,j_ti,time_to_dl,K_lookahead,time_video,Bmax);
+            updateBufferStates(buf_it,played_qualities,x_ijl,j_ti_min,time_to_dl,K_lookahead,time_video,Bmax);
 
             //-- update bw estimate
             truedl_rate = bw_trace.subList((int)time_user-1, ((int)(time_user+time_to_dl-1-1)) );
@@ -152,7 +152,7 @@ public class StreamingSimulation {
     }
 
 
-    private void updateBufferStates(List<List<List<Double>>>  buf_it, List<List<Double>> played_qualities, List<List<List<Double>>>  x_ijl, List<List<Double>>  j_ti,
+    private void updateBufferStates(List<List<List<Double>>>  buf_it, List<List<Double>> played_qualities, List<List<List<Double>>>  x_ijl, List<Double>  j_ti,
                                     double time_to_dl,double K_lookahead,double time_video,double Bmax){ //update buf_it and played_qualities
         /***
         nb_of_tiles=size(x_ijl,1);
@@ -229,30 +229,45 @@ public class StreamingSimulation {
                                                    List<Double> p_ij, List<List<List<Double>>> s_ijl, double Ct, List<List<List<Double>>> buf_it,
                                                    List<Double> j_ti, double Bmin, double Bmax){ //give [x_ijl]=
         List<List<List<Double>>> resultx_ijl = s_ijl;
-        /***
-        nb_of_tiles=size(s_ijl,1); nb_of_segments=size(s_ijl,2); nb_of_levels=size(s_ijl,3);
-        x_ijl=zeros([nb_of_tiles,nb_of_segments,nb_of_levels]);
-        //-- temporary transform
-        buf_it(buf_it<(nb_of_segments+3))=1;
-        buf_it(buf_it==(nb_of_segments+3))=0;
-        //-- end of temporary transform
-        ind_nonfullbuf=find(matrixSum(matrixSum(buf_it,2),3)<Bmax);
-        nb_of_nonfulltiles=length(ind_nonfullbuf);
 
-        j_t=min(j_ti);
-        j_imin=zeros(1,nb_of_tiles);
-        bufsize_i=matrixSum(matrixSum(buf_it,3),2);
+        nb_of_tiles = s_ijl.get(0).get(0).size();
+        nb_of_segments = s_ijl.get(0).size();
+        nb_of_levels = s_ijl.size();
+        List<List<List<Double>>> x_ijl = Matrix.create3DMatrix(nb_of_tiles,nb_of_segments,nb_of_levels,0);
+
+
+        //-- temporary transform
+        List<List<List<Double>>> buf_tmp = buf_it;
+        Matrix.setValueInMatrix3DToElementsSmallerThan(buf_tmp,(nb_of_segments+3),1);
+        Matrix.setValueInMatrix3DToElementsEqualTo(buf_tmp,(nb_of_segments+3),0);
+
+        //-- end of temporary transform
+
+        List<Double> ind_nonfullbuf = Matrix.getValuesSmallerThan(Matrix.vectorSumOfEachRowInMatrix3D(Matrix.sum3DOfEachRowInMatrix3D(buf_tmp)), Bmax);
+        double nb_of_nonfulltiles = ind_nonfullbuf.size();
+
+
+        double j_t = Matrix.minVector(j_ti);
+        List<Double> j_imin = Matrix.createVector(nb_of_tiles,0);
+        List<Double> bufsize_i = Matrix.vectorSumOfEachRowInMatrix3D(Matrix.sum3DOfEachRowInMatrix3D(buf_tmp));
 
         //-- Initialize with highest qualities on as many next segments as possible
         //with buf size(i)>=Bmax
-        for ind=1:nb_of_nonfulltiles,
-                i=ind_nonfullbuf(ind);
-        x_ijl(i,j_ti(i):min(j_t+K_lookahead-1,j_ti(i)-1+Bmax-bufsize_i(i)),nb_of_levels)=1;
-        j_imin(i)=j_ti(i)+(Bmin-bufsize_i(i))/deltaDownload;
-        j_imin(i)=min(j_t+K_lookahead-1,j_imin(i));
-        end
 
-                reqbw=x_ijl.*s_ijl;
+        for (int ind=0; ind<nb_of_nonfulltiles; ind++){
+            int i = ind_nonfullbuf.get(ind).intValue();
+
+            for(int y= j_ti.get(i).intValue(); y<Math.min(j_t+K_lookahead-1, j_ti.get(i)-1+Bmax-bufsize_i.get(i)); y++){
+                x_ijl.get(nb_of_levels).get(y).set(i, 1.);
+            }
+
+            double newValue = j_ti.get(i)+(Bmin -bufsize_i.get(i))/deltaDownload;
+            j_imin.set(i, newValue);
+            j_imin.set(i, Math.min(j_t +K_lookahead -1, j_imin.get(i)));
+        }
+
+        /**
+        reqbw=x_ijl.*s_ijl;
         reqbw=matrixSum(reqbw(:));
 
         [psorted_i,indsorted_i]=sort(p_ij(ind_nonfullbuf),'ascend');

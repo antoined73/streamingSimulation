@@ -422,4 +422,29 @@ public class Matrix {
         }
         return  resultMatrix;
     }
+
+    public static List<List<List<Double>>> sum3DOfEachRowInMatrix3D(List<List<List<Double>>> matrix3D) {
+        List<List<List<Double>>> resultMatrix3D = new ArrayList<>();
+        for (List<List<Double>> matrix :
+             matrix3D) {
+            List<List<Double>> m = new ArrayList<>();
+            m.add(sumOfEachRow(matrix));
+            resultMatrix3D.add(m);
+        }
+        return resultMatrix3D;
+    }
+
+    public static List<Double> vectorSumOfEachRowInMatrix3D(List<List<List<Double>>> matrix3D) {
+        return null;
+    }
+
+    public static List<Double> getValuesSmallerThan(List<Double> vector, double compareValue) {
+        List<Double> resultVector = new ArrayList<>();
+        for (int i=0; i<vector.size(); i++) {
+            if(vector.get(i) < compareValue){
+                resultVector.add(vector.get(i));
+            }
+        }
+        return resultVector;
+    }
 }
