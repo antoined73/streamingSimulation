@@ -1,5 +1,4 @@
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static java.lang.Math.floor;
 import static java.lang.Math.sqrt;
@@ -266,55 +265,74 @@ public class StreamingSimulation {
             j_imin.set(i, Math.min(j_t +K_lookahead -1, j_imin.get(i)));
         }
 
-        /**
-        reqbw=x_ijl.*s_ijl;
-        reqbw=matrixSum(reqbw(:));
 
-        [psorted_i,indsorted_i]=sort(p_ij(ind_nonfullbuf),'ascend');
+        List<List<List<Double>>>  reqbws = Matrix.multiplyElementByElementMatrix3D(x_ijl,s_ijl);
+        double reqbw = Matrix.matrix3Dsum(reqbws);
+
+        List<Double> psorted_i = Matrix.cloneVector(p_ij);
+        Collections.sort(psorted_i);
+
+        List<Double> indsorted_i = Matrix.cloneVector(ind_nonfullbuf);
+
+
+        for (int i=0; i<psorted_i.size(); i++) {
+            for (int index=0; index<p_ij.size(); index++) { // get the old index of where the sorted value was
+                if(psorted_i.get(index).equals(p_ij.get(i))){
+                    indsorted_i.set(index, ind_nonfullbuf.get(index));
+                }
+            }
+        }
+
 
         //-- If needed, decrease quality on most future segs then with lowest prob
         //to be watched, still satisfing buf size(i)>=Bmin at the end of dl
-        j=j_t+K_lookahead-1;
-        while reqbw>Ct*deltaDownload && j>=j_t,
-        for indsorted=1:nb_of_nonfulltiles,
-                i=ind_nonfullbuf(indsorted_i(indsorted));
-        l_current=find(x_ijl(i,j,:));
-        if j>j_imin(i),
-                l=l_current-1;
-        x_ijl(i,j,l_current)=0;
-        if l>=1,
-                x_ijl(i,j,l)=1;
-        end
-        elseif j>=j_ti(i),
-        if j<=j_imin(i) && l_current>1,
-                l=l_current-1;
-        x_ijl(i,j,l_current)=0;
-        x_ijl(i,j,l)=1;
-        end
-                end
-        reqbw=x_ijl.*s_ijl;
-        reqbw=matrixSum(reqbw(:));
-        if reqbw<=Ct*deltaDownload,
-        break;
-        end
-                end
-        j=j-1;
-        //---Test---//
-        if matrixSum(x_ijl,3)>1,
-                error('more than 1 level per chunk');
-        end
-                end
+
+        int j = (int) (j_t+K_lookahead-1);
+        int l, l_current;
+        while (reqbw > Ct*deltaDownload && j>=j_t){
+            for (int indsorted=0; indsorted<nb_of_nonfulltiles; indsorted++){
+                int i = ind_nonfullbuf.get(indsorted_i.get(indsorted).intValue()).intValue();
+
+                l_current = 0;//find(x_ijl(i,j,:));
+
+                if (j > j_imin.get(i)){
+                    l=l_current-1;
+                    x_ijl.get(l_current).get(j).set(i,0.);
+                    if (l>=1){
+                        x_ijl.get(l).get(j).set(i,1.);
+                    }
+                } else if (j >= j_ti.get(i)){
+                    if (j <= j_imin.get(i) && l_current>1){
+                        l=l_current-1;
+                        x_ijl.get(l_current).get(j).set(i,0.);
+                        x_ijl.get(l).get(j).set(i,1.);
+                    }
+                }
+                reqbws = Matrix.multiplyElementByElementMatrix3D(x_ijl,s_ijl);
+                reqbw = Matrix.matrix3Dsum(reqbws);
+                if (reqbw <= Ct*deltaDownload)
+                    break;
+            }
+            j = j-1;
+
+            //---Test---//
+            if (Matrix.matrix3Dsum(x_ijl)>1)
+                System.out.println("more than 1 level per chunk");
+        }
 
         //-- If this is not sufficient, then break constrain buf size(i)>=Bmin and
         //do not dl later segs, in order of p_ij
         if (j<j_t){
-            j = j_t+K_lookahead-1;
+            j = (int) (j_t+K_lookahead-1);
             while (j>=j_t && reqbw>Ct*deltaDownload){
+                int i;
                 for (int indsorted=1; indsorted<nb_of_nonfulltiles; indsorted++){// at least the most important tile downloaded (but for all K_lookahead -> change?)
-                    i = ind_nonfullbuf(indsorted_i(indsorted));
-                    x_ijl(i,j,:) = zeros(size(x_ijl(i,j,:)));
-                    reqbw=x_ijl.*s_ijl;
-                    reqbw=matrixSum(reqbw(:));
+                    i = ind_nonfullbuf.get(indsorted_i.get(indsorted).intValue()).intValue();
+
+                    //x_ijl(i,j,:) = zeros(size(x_ijl(i,j,:)));
+
+                    reqbws = Matrix.multiplyElementByElementMatrix3D(x_ijl,s_ijl);
+                    reqbw = Matrix.matrix3Dsum(reqbws);
                     if (reqbw <= Ct*deltaDownload){
                         break;
                     }
@@ -322,8 +340,6 @@ public class StreamingSimulation {
                 j=j-1;
             }
         }
-     ***/
-
         return resultx_ijl;
     }
 

@@ -216,7 +216,7 @@ public class Matrix {
         return clonedMatrix;
     }
 
-    private static List<Double> cloneVector(List<Double> vector) {
+    public static List<Double> cloneVector(List<Double> vector) {
         List<Double> clonedVector = new ArrayList<>();
         for (Double d :
                 vector) {
@@ -446,5 +446,21 @@ public class Matrix {
             }
         }
         return resultVector;
+    }
+
+    public static double matrix3Dsum(List<List<List<Double>>> matrix3D) {
+        double sum = 0;
+        for (List<List<Double>> matrix : matrix3D){
+            sum+= matrixSum(matrix);
+        }
+        return sum;
+    }
+
+    public static List<List<List<Double>>> multiplyElementByElementMatrix3D(List<List<List<Double>>> matrix3D_1, List<List<List<Double>>> matrix3D_2) {
+        List<List<List<Double>>> resultMatrix3D = new ArrayList<>();
+        for (int i=0; i<matrix3D_1.size(); i++) {
+            resultMatrix3D.add(multiplyElementByElementMatrix(matrix3D_1.get(i),matrix3D_2.get(i)));
+        }
+        return resultMatrix3D;
     }
 }
