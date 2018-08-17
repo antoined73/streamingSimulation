@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.function.ToIntFunction;
 
 import static java.lang.Math.floor;
 import static java.lang.Math.sqrt;
@@ -151,45 +152,86 @@ public class StreamingSimulation {
     }
 
 
-    private void updateBufferStates(List<List<List<Double>>>  buf_it, List<List<Double>> played_qualities, List<List<List<Double>>>  x_ijl, List<Double>  j_ti,
-                                    double time_to_dl,double K_lookahead,double time_video,double Bmax){ //update buf_it and played_qualities
-        /***
-        nb_of_tiles=size(x_ijl,1);
-        nb_of_segments=size(x_ijl,2);
-        j_t=min(j_ti);
-        //-- temporary transform
-        buf_tmp=buf_it;
-        buf_tmp(buf_tmp<(nb_of_segments+3))=1;
-        buf_tmp(buf_tmp==(nb_of_segments+3))=0;
-        //-- end of temporary transform
-        bufsize_i=matrixSum(matrixSum(buf_tmp,3),2);
+    private void updateBufferStates(List<List<List<Integer>>> buf_it, List<List<Integer>> played_qualities, List<List<List<Integer>>> x_ijl, List<Integer> j_ti,
+                                    int time_to_dl, int K_lookahead, double time_video, int Bmax){ //update buf_it and played_qualities
+        this.nb_of_tiles = x_ijl.size();
+        this.nb_of_segments = x_ijl.get(0).size();
+
+        int j_t = j_ti.stream().min(Comparator.naturalOrder()).orElse(0);
+
+        //temporary transform
+        List<List<List<Integer>>> buf_tmp = new ArrayList<>(buf_it);
+        for (List<List<Integer>> aBuf_tmp1 : buf_tmp) {
+            for (int j = 0; j < aBuf_tmp1.size(); ++j) {
+                for (int k = 0; k < aBuf_tmp1.get(j).size(); ++k) {
+                    if (aBuf_tmp1.get(j).get(k) < nb_of_segments + 3) {
+                        aBuf_tmp1.get(j).set(k, 1);
+                    } else if (aBuf_tmp1.get(j).get(k) == nb_of_segments + 3) {
+                        aBuf_tmp1.get(j).set(k, 0);
+                    }
+                }
+            }
+        }
+        //end of temporary transform
+
+        List<Integer> bufsize_i = new ArrayList<>();
+        {
+            List<List<Integer>> tmp = new LinkedList<>();
+            for (List<List<Integer>> aBuf_tmp : buf_tmp) {
+                List<Integer> tmp2 = new LinkedList<>();
+                for (List<Integer> anABuf_tmp : aBuf_tmp) {
+                    tmp2.add(anABuf_tmp.stream().mapToInt(t -> t).sum());
+                }
+                tmp.add(tmp2);
+            }
+            for (List<Integer> aTmp : tmp) {
+                bufsize_i.add(aTmp.stream().mapToInt(t -> t).sum());
+            }
+        }
 
         //-- first fill: everything that was scheduled for dl
-        buf_tmp=buf_it;
-        for i=1:nb_of_tiles,
-                ind_placeinbuf=1;
-        for j=j_ti(i):j_t+K_lookahead-1,
-                l=find(x_ijl(i,j,:)==1);
-        if ~isempty(l),
-                buf_tmp(i,bufsize_i(i)+ind_placeinbuf,l)=j;
-        ind_placeinbuf=ind_placeinbuf+1;
-        end
-                end
-        end;
+        buf_tmp = new ArrayList<>(buf_it);
+        for (int i = 0 ; i < nb_of_tiles ; ++i) {
+            int ind_placeinbuf = 0;
+            for (int j = j_ti.get(i); j < j_t + K_lookahead ; ++j) {
+            	for (int k = 0 ; k < x_ijl.get(i).get(j).size() ; ++k) {
+            	    if (x_ijl.get(i).get(j).get(k) == 1) {
+            	        buf_tmp.get(i).get(bufsize_i.get(i) + ind_placeinbuf).set(k, j);
+                    }
+                }
+                ind_placeinbuf++;
+            }
+        }
 
         //-- then drain: everything that has been read in max(deltaDownload,time_to_dl)
-        for played_seg=time_video+1:time_video+time_to_dl,
-        for i=1:nb_of_tiles,
-                ind_l=find(buf_tmp(i,played_seg-time_video,:)==played_seg),
-        if length(ind_l)>1 || buf_tmp(i,played_seg-time_video,ind_l)~=played_seg
-        error('played_seg index');
-        end
-        played_qualities(i,played_seg)=ind_l;
-        end
-                end
-        buf_it=buf_tmp(:,time_to_dl+1:min(time_to_dl+Bmax+2,size(buf_tmp,2)),:);
-        buf_it(:,size(buf_it,2)+(1:Bmax+2-size(buf_it,2)),:)=nb_of_segments+3;
-     ***/
+	    for (int played_seg = (int)time_video ; played_seg < (int)time_video + time_to_dl ; ++played_seg) {
+            for (int i = 0 ; i < nb_of_tiles ; ++i) {
+                int finalPlayed_seg = played_seg;
+                int finalI = i;
+                buf_tmp.get(i).get(played_seg - (int)time_video)
+                        .stream()
+                        .filter(d -> d.equals(finalPlayed_seg))
+                        .findFirst()
+                        .ifPresent(t -> played_qualities.get(finalI).set(finalPlayed_seg, t));
+            }
+        }
+
+        buf_it.clear();
+	    for (int i = 0 ; i < buf_tmp.size() ; ++i) {
+            List<List<Integer>> tmp = new ArrayList<>();
+	        int lim = Math.min(time_to_dl + Bmax + 2, buf_tmp.get(i).size());
+	    	for (int j = time_to_dl ; j < lim ; ++j) {
+				tmp.add(new ArrayList<>(buf_tmp.get(i).get(j)));
+            }
+            buf_it.add(tmp);
+        }
+        for (int i = 0 ; i < buf_it.size() ; ++i) {
+            for (int j = buf_it.get(i).size() ; j < Bmax + 2 ; ++j) {
+                for (int k = 0 ; k < buf_it.get(i).get(j).size() ; ++k) {
+                    buf_it.get(i).get(j).set(k, nb_of_segments + 3);
+                }
+            }
+        }
     }
 
     private List<Double> generateNewFOV(List<Double> FoV_xy){
