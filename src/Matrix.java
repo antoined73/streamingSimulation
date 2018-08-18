@@ -167,11 +167,11 @@ public class Matrix {
         return resultVector;
     }
 
-    public static List<Double> getIndexOfNonZeros(List<Double> vector) {
-        List<Double> resultVector = new ArrayList<>();
+    public static List<Integer> getIndexOfNonZeros(List<Double> vector) {
+        List<Integer> resultVector = new ArrayList<>();
         for (int i=0; i<vector.size(); i++) {
             if(vector.get(i)!=0)
-                resultVector.add((double) i);
+                resultVector.add(i);
         }
         return resultVector;
     }
@@ -221,6 +221,15 @@ public class Matrix {
         for (Double d :
                 vector) {
             clonedVector.add(d);
+        }
+        return clonedVector;
+    }
+
+    public static List<Double> cloneVectorToDouble(List<Integer> vector) {
+        List<Double> clonedVector = new ArrayList<>();
+        for (Integer d :
+                vector) {
+            clonedVector.add((double)d);
         }
         return clonedVector;
     }
@@ -353,7 +362,8 @@ public class Matrix {
     public static List<List<Double>> multiplyElementByElementMatrix(List<List<Double>> m1, List<List<Double>> m2) {
         List<List<Double>> resultMatrix = cloneMatrix(m1);
         for (int i=0; i<resultMatrix.size(); i++){
-            resultMatrix.set(i, multiplyElementByElementVector(m1.get(i),m2.get(i)) );
+            if(m1.size() >= i+1 && m2.size() >= i+1)
+                resultMatrix.set(i, multiplyElementByElementVector(m1.get(i),m2.get(i)) );
         }
         return resultMatrix;
     }
@@ -411,12 +421,13 @@ public class Matrix {
     }
 
     public static List<List<Double>> sumOfEachMatrix(List<List<List<Double>>> matrix3D) {
-        List<List<Double>> resultMatrix = createMatrix(matrix3D.get(0).size(),matrix3D.get(0).get(0).size(),0);
+        List<List<Double>> resultMatrix = createMatrix(matrix3D.get(0).get(0).size(),matrix3D.get(0).size(),0);
         for (List<List<Double>> matrix :
                 matrix3D) {
             for (int y=0; y<matrix.size(); y++) {
                 for (int x=0; x<matrix.get(y).size(); x++) {
-                    resultMatrix.get(x).set(y,matrix.get(y).get(x));
+                    resultMatrix.get(y).set(x,
+                            resultMatrix.get(y).get(x) + matrix.get(y).get(x));
                 }
             }
         }
@@ -463,7 +474,8 @@ public class Matrix {
     public static List<List<List<Double>>> multiplyElementByElementMatrix3D(List<List<List<Double>>> matrix3D_1, List<List<List<Double>>> matrix3D_2) {
         List<List<List<Double>>> resultMatrix3D = new ArrayList<>();
         for (int i=0; i<matrix3D_1.size(); i++) {
-            resultMatrix3D.add(multiplyElementByElementMatrix(matrix3D_1.get(i),matrix3D_2.get(i)));
+            if(matrix3D_1.size() >= i+1 && matrix3D_2.size() >= i+1)
+                resultMatrix3D.add(multiplyElementByElementMatrix(matrix3D_1.get(i),matrix3D_2.get(i)));
         }
         return resultMatrix3D;
     }
@@ -503,16 +515,57 @@ public class Matrix {
     public static List<List<Integer>> cloneMatrixInteger(List<List<Double>> m) {
         List<List<Integer>> matrix = new ArrayList();
         for(int line=0; line<m.size(); line++){ // Add sizeY rows (to have sizeY columns)
-            matrix.add(cloneVectorInteger(m.get(line)));
+            matrix.add(cloneVectorToInteger(m.get(line)));
         }
         return matrix;
     }
 
-    public static List<Integer> cloneVectorInteger(List<Double> v) {
+    public static List<Integer> cloneVectorToInteger(List<Double> v) {
         List<Integer> vector = new ArrayList();
         for(int line=0; line<v.size(); line++){
             vector.add(v.get(line).intValue());
         }
         return vector;
+    }
+
+    public static List<Integer> cloneVectorInteger(List<Integer> v) {
+        List<Integer> vector = new ArrayList();
+        for(int line=0; line<v.size(); line++){
+            vector.add(v.get(line));
+        }
+        return vector;
+    }
+
+    public static void printMatrix3D(List<List<List<Double>>> matrix3D) {
+        for(int i=0; i<matrix3D.size(); i++){
+            System.out.println("feuille "+i);
+            printMatrix(matrix3D.get(i));
+        }
+    }
+
+    private static void printMatrix(List<List<Double>> matrix) {
+        for(int i=0; i<matrix.size(); i++){
+            printVector(matrix.get(i));
+        }
+    }
+
+    public static void printVector(List<Double> vector) {
+        String line="[ ";
+        for(int i=0; i<vector.size(); i++){
+            line+= vector.get(i);
+            if(i+1 < vector.size())
+                line+= ", ";
+        }
+        line+= " ]";
+        System.out.println(line);
+    }
+
+    public static List<Integer> getIndexOfValuesSmallerThan(List<Double> vector, double value) {
+        List<Integer> resultIndexes = new ArrayList<>();
+        for (int i=0; i<vector.size(); i++) {
+            if(vector.get(i) < value)
+                resultIndexes.add(i);
+        }
+        return resultIndexes;
     }
 }

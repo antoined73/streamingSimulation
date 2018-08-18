@@ -5,15 +5,15 @@ import static java.lang.Math.sqrt;
 
 public class StreamingSimulation {
 
-    int nb_of_levels = 2;
+    private int nb_of_levels = 2;
     private int K_lookahead = 3;
-    int nb_of_tiles = 4;
-    int nb_of_segments = 20;
-    double seg_duration = 1;
-    double deltaDownload = seg_duration * K_lookahead;
+    private int nb_of_tiles = 4;
+    private int nb_of_segments = 20;
+    private double seg_duration = 1;
+    private double deltaDownload = seg_duration * K_lookahead;
 
-    List<List<Double>> tile_centers_xy; // matrix of 4 lines containing each 2 columns
-    double tilecenter_offset;
+    private List<List<Double>> tile_centers_xy; // matrix of 4 lines containing each 2 columns
+    private double tilecenter_offset;
     List<Double> x, y; //float[2] sizes of the video square
 
 
@@ -141,7 +141,7 @@ public class StreamingSimulation {
             List<List<List<Integer>>> buf_it_int = Matrix.DoubleMatrix3DtoInteger(buf_it);
             List<List<Integer>> played_qualities_int = Matrix.cloneMatrixInteger(played_qualities);
             List<List<List<Integer>>> x_ijl_int =  Matrix.DoubleMatrix3DtoInteger(x_ijl);
-            List<Integer> j_ti_min_int = Matrix.cloneVectorInteger(j_ti_min);
+            List<Integer> j_ti_min_int = Matrix.cloneVectorToInteger(j_ti_min);
             updateBufferStates(buf_it_int,played_qualities_int,x_ijl_int,j_ti_min_int,time_to_dl,K_lookahead,time_video,Bmax);
 
             //-- update bw estimate
@@ -266,7 +266,7 @@ public class StreamingSimulation {
 
         List<Double> size_dldable = Matrix.cumsum(trace);
         List<Double> tmp = Matrix.compareBiggerEqual(size_dldable,dlded_size);
-        List<Double> time_dlded = Matrix.getIndexOfNonZeros(tmp);
+        List<Integer> time_dlded = Matrix.getIndexOfNonZeros(tmp);
 
         double time = (time_dlded.size() > 0 ? time_dlded.get(0) : 0);
 
@@ -274,15 +274,13 @@ public class StreamingSimulation {
     }
 
 
-    private List<List<List<Double>>> instant_optim(double K_lookahead, double deltaDownload,
+    public List<List<List<Double>>> instant_optim(double K_lookahead, double deltaDownload,
                                                    List<Double> p_ij, List<List<List<Double>>> s_ijl, double Ct, List<List<List<Double>>> buf_it,
                                                    List<Double> j_ti, double Bmin, double Bmax){ //give [x_ijl]=
-        List<List<List<Double>>> resultx_ijl = s_ijl;
-
-        nb_of_tiles = s_ijl.get(0).get(0).size();
-        nb_of_segments = s_ijl.get(0).size();
+        nb_of_tiles = s_ijl.get(0).size();
+        nb_of_segments = s_ijl.get(0).get(0).size();
         nb_of_levels = s_ijl.size();
-        List<List<List<Double>>> x_ijl = Matrix.create3DMatrix(nb_of_tiles,nb_of_segments,nb_of_levels,0);
+        List<List<List<Double>>> x_ijl = Matrix.create3DMatrix(nb_of_segments,nb_of_tiles,nb_of_levels,0);
 
 
         //-- temporary transform
@@ -292,8 +290,9 @@ public class StreamingSimulation {
 
         //-- end of temporary transform
 
-        List<List<Double>> test = Matrix.sumOfEachMatrix(buf_tmp);
-        List<Double> ind_nonfullbuf = Matrix.getValuesSmallerThan(Matrix.vectorSumOfEachRowInMatrix(test), Bmax);
+        List<List<Double>> matrixSum = Matrix.sumOfEachMatrix(buf_tmp);
+        List<Double> sumEachRow = Matrix.vectorSumOfEachRowInMatrix(matrixSum);
+        List<Integer> ind_nonfullbuf = Matrix.getIndexOfValuesSmallerThan(sumEachRow, Bmax);
         double nb_of_nonfulltiles = ind_nonfullbuf.size();
 
 
@@ -303,14 +302,13 @@ public class StreamingSimulation {
 
         //-- Initialize with highest qualities on as many next segments as possible
         //with buf size(i)>=Bmax
-
         for (int ind=0; ind<nb_of_nonfulltiles; ind++){
-            int i = ind_nonfullbuf.get(ind).intValue()-1;
+            int i = ind_nonfullbuf.get(ind);
 
-            for(int y= j_ti.get(i).intValue()-1;
-                y< Math.min(j_t+K_lookahead-1, j_ti.get(i)-1+Bmax-bufsize_i.get(i)) -1;
-                y++){
-                x_ijl.get(nb_of_levels).get(y).set(i, 1.);
+            int indexMaxDl = (int) Math.min(j_t+K_lookahead, j_ti.get(i)+Bmax-bufsize_i.get(i)) -1;
+
+            for(int y= j_ti.get(i).intValue()-1; y< indexMaxDl; y++){
+                x_ijl.get(nb_of_levels-1).get(i).set(y, 1.);
             }
 
             double newValue = j_ti.get(i)+(Bmin -bufsize_i.get(i))/deltaDownload;
@@ -318,20 +316,19 @@ public class StreamingSimulation {
             j_imin.set(i, Math.min(j_t +K_lookahead -1, j_imin.get(i)));
         }
 
-
         List<List<List<Double>>>  reqbws = Matrix.multiplyElementByElementMatrix3D(x_ijl,s_ijl);
         double reqbw = Matrix.matrix3Dsum(reqbws);
 
+        //get index of sorted probabilities
         List<Double> psorted_i = Matrix.cloneVector(p_ij);
         Collections.sort(psorted_i);
-
-        List<Double> indsorted_i = Matrix.cloneVector(ind_nonfullbuf);
-
-
+        List<Integer> indsorted_i = Matrix.cloneVectorInteger(ind_nonfullbuf);
         for (int i=0; i<psorted_i.size(); i++) {
+            double currentValue = psorted_i.get(i);
             for (int index=0; index<p_ij.size(); index++) { // get the old index of where the sorted value was
-                if(psorted_i.get(index).equals(p_ij.get(i))){
-                    indsorted_i.set(index, ind_nonfullbuf.get(index));
+                if(currentValue == p_ij.get(index)){
+                    indsorted_i.set(i, index);
+                    break;
                 }
             }
         }
@@ -339,39 +336,65 @@ public class StreamingSimulation {
 
         //-- If needed, decrease quality on most future segs then with lowest prob
         //to be watched, still satisfing buf size(i)>=Bmin at the end of dl
-
-        int j = (int) (j_t+K_lookahead-1);
+        int j = (int) (j_t+K_lookahead-1) -1; //index of buffer
         int l, l_current;
-        while (reqbw > Ct*deltaDownload && j>=j_t){
+        l_current=0;
+        while (reqbw > Ct*deltaDownload && j>=j_t-1){
             for (int indsorted=0; indsorted<nb_of_nonfulltiles; indsorted++){
-                int i = ind_nonfullbuf.get(indsorted_i.get(indsorted).intValue()).intValue();
 
-                l_current = 0;//TODO : find(x_ijl(i,j,:));
+                int i = ind_nonfullbuf.get(indsorted_i.get(indsorted)); //index of segment
+                //i and j are right, l_current too
 
-                if (j > j_imin.get(i)){
+                List<Double> x_ijl_pages_ij = new ArrayList<>();
+                for (List<List<Double>> m :
+                        x_ijl) {
+                    x_ijl_pages_ij.add(m.get(i).get(j));
+                }
+                List<Integer> nzero = Matrix.getIndexOfNonZeros(x_ijl_pages_ij);
+
+                if(nzero.size() > 0)
+                    l_current = nzero.get(0); //TODO : What do you do when there is no non zero value in x_ijl(i,j,:) ?
+
+                //System.out.println(i + "," + j +" l_current = "+l_current);
+                if (j > j_imin.get(i)-1){ // segments bonus
                     l=l_current-1;
-                    x_ijl.get(l_current).get(j).set(i,0.);
-                    if (l>=1){
-                        x_ijl.get(l).get(j).set(i,1.);
+                    x_ijl.get(l_current).get(i).set(j,0.);
+                    if (l>=0){
+                        System.out.println("1- j="+j+" > j_min.get("+i+")= "+(j_imin.get(i)-1));
+                        x_ijl.get(l).get(i).set(j,1.);
                     }
-                } else if (j >= j_ti.get(i)){
-                    if (j <= j_imin.get(i) && l_current>1){
+                } else if (j >= j_ti.get(i)-1){ //segments obligatoires
+                    if (j <= j_imin.get(i)-1 && l_current>1-1){
+                        System.out.println("2- j="+j+" >= j_ti.get("+i+")= "+(j_ti.get(i)-1));
+
                         l=l_current-1;
-                        x_ijl.get(l_current).get(j).set(i,0.);
-                        x_ijl.get(l).get(j).set(i,1.);
+                        x_ijl.get(l_current).get(i).set(j,0.);
+                        x_ijl.get(l).get(i).set(j,1.);
                     }
                 }
+
                 reqbws = Matrix.multiplyElementByElementMatrix3D(x_ijl,s_ijl);
                 reqbw = Matrix.matrix3Dsum(reqbws);
                 if (reqbw <= Ct*deltaDownload)
                     break;
             }
+
             j = j-1;
 
-            //---Test---//
-            if (Matrix.matrix3Dsum(x_ijl)>1)
-                System.out.println("more than 1 level per chunk");
+            // Check that we don't download 2 qualities differents for a segment of a same tile
+            for (List<Double> rowSumMatrix :
+                    Matrix.sumOfEachMatrix(x_ijl)) {
+                for (Double d :
+                        rowSumMatrix) {
+                    if(d > 1)
+                        System.err.println("More than 1 level per chunk");
+                }
+            }
+            System.out.println("--------");
         }
+
+        //Start function from here is working
+        Matrix.printMatrix3D(x_ijl);
 
         //-- If this is not sufficient, then break constrain buf size(i)>=Bmin and
         //do not dl later segs, in order of p_ij
@@ -380,14 +403,12 @@ public class StreamingSimulation {
             while (j>=j_t && reqbw>Ct*deltaDownload){
                 int i;
                 for (int indsorted=1; indsorted<nb_of_nonfulltiles; indsorted++){// at least the most important tile downloaded (but for all K_lookahead -> change?)
-                    i = ind_nonfullbuf.get(indsorted_i.get(indsorted).intValue()).intValue();
+                    i = ind_nonfullbuf.get(indsorted_i.get(indsorted).intValue());
 
                     //TODO : x_ijl(i,j,:) = zeros(size(x_ijl(i,j,:)));
-                    /**
-                    for (List<List<Double>> m :
-                            x_ijl) {
-                        x_ijl.get(i).set(j, x_ijl.get(i).get(j) );
-                    }**/
+                    for (List<List<Double>> m : x_ijl) {
+                        m.get(i).set(j, 0.);
+                    }
 
                     reqbws = Matrix.multiplyElementByElementMatrix3D(x_ijl,s_ijl);
                     reqbw = Matrix.matrix3Dsum(reqbws);
@@ -398,7 +419,7 @@ public class StreamingSimulation {
                 j=j-1;
             }
         }
-        return resultx_ijl;
+        return x_ijl;
     }
 
 }
