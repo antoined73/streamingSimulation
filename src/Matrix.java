@@ -362,7 +362,7 @@ public class Matrix {
     public static List<List<Double>> multiplyElementByElementMatrix(List<List<Double>> m1, List<List<Double>> m2) {
         List<List<Double>> resultMatrix = cloneMatrix(m1);
         for (int i=0; i<resultMatrix.size(); i++){
-            if(m1.size() >= i+1 && m2.size() >= i+1)
+            if(i<m1.size()&& i< m2.size())
                 resultMatrix.set(i, multiplyElementByElementVector(m1.get(i),m2.get(i)) );
         }
         return resultMatrix;
@@ -474,7 +474,7 @@ public class Matrix {
     public static List<List<List<Double>>> multiplyElementByElementMatrix3D(List<List<List<Double>>> matrix3D_1, List<List<List<Double>>> matrix3D_2) {
         List<List<List<Double>>> resultMatrix3D = new ArrayList<>();
         for (int i=0; i<matrix3D_1.size(); i++) {
-            if(matrix3D_1.size() >= i+1 && matrix3D_2.size() >= i+1)
+            if(i < matrix3D_1.size() && i < matrix3D_2.size())
                 resultMatrix3D.add(multiplyElementByElementMatrix(matrix3D_1.get(i),matrix3D_2.get(i)));
         }
         return resultMatrix3D;

@@ -117,7 +117,7 @@ public class StreamingSimulation {
 
 
             //-- make dl decision
-            List<List<List<Double>>> x_ijl = instant_optim(K_lookahead,deltaDownload,p_ij,s_ijl,Ct,buf_it,j_ti_min,Bmin,Bmax);
+            List<List<List<Double>>> x_ijl = instant_optim(K_lookahead,deltaDownload,p_ij,s_ijl,Ct,buf_it,j_ti_min,Bmin,Bmax,time_video);
 
             //-- buffers states after dl finished (right before next download attempt)
 
@@ -276,7 +276,7 @@ public class StreamingSimulation {
 
     public List<List<List<Double>>> instant_optim(double K_lookahead, double deltaDownload,
                                                    List<Double> p_ij, List<List<List<Double>>> s_ijl, double Ct, List<List<List<Double>>> buf_it,
-                                                   List<Double> j_ti, double Bmin, double Bmax){ //give [x_ijl]=
+                                                   List<Double> j_ti, double Bmin, double Bmax, double time_video){ //give [x_ijl]=
         nb_of_tiles = s_ijl.get(0).size();
         nb_of_segments = s_ijl.get(0).get(0).size();
         nb_of_levels = s_ijl.size();
@@ -339,6 +339,7 @@ public class StreamingSimulation {
         int j = (int) (j_t+K_lookahead-1) -1; //index of buffer
         int l, l_current;
         l_current=0;
+        //System.out.println("DEBUT downgrde 1 : "+reqbw);
         while (reqbw > Ct*deltaDownload && j>=j_t-1){
             for (int indsorted=0; indsorted<nb_of_nonfulltiles; indsorted++){
 
@@ -360,12 +361,12 @@ public class StreamingSimulation {
                     l=l_current-1;
                     x_ijl.get(l_current).get(i).set(j,0.);
                     if (l>=0){
-                        System.out.println("1- j="+j+" > j_min.get("+i+")= "+(j_imin.get(i)-1));
+                        //System.out.println("1- j="+j+" > j_min.get("+i+")= "+(j_imin.get(i)-1));
                         x_ijl.get(l).get(i).set(j,1.);
                     }
                 } else if (j >= j_ti.get(i)-1){ //segments obligatoires
                     if (j <= j_imin.get(i)-1 && l_current>1-1){
-                        System.out.println("2- j="+j+" >= j_ti.get("+i+")= "+(j_ti.get(i)-1));
+                        //System.out.println("2- j="+j+" >= j_ti.get("+i+")= "+(j_ti.get(i)-1));
 
                         l=l_current-1;
                         x_ijl.get(l_current).get(i).set(j,0.);
@@ -375,6 +376,7 @@ public class StreamingSimulation {
 
                 reqbws = Matrix.multiplyElementByElementMatrix3D(x_ijl,s_ijl);
                 reqbw = Matrix.matrix3Dsum(reqbws);
+                //System.out.println("FIN downgrde 1 : "+reqbw);
                 if (reqbw <= Ct*deltaDownload)
                     break;
             }
@@ -390,28 +392,31 @@ public class StreamingSimulation {
                         System.err.println("More than 1 level per chunk");
                 }
             }
-            System.out.println("--------");
+            //System.out.println("--------");
         }
 
         //Start function from here is working
-        Matrix.printMatrix3D(x_ijl);
+        //Matrix.printMatrix3D(x_ijl);
 
         //-- If this is not sufficient, then break constrain buf size(i)>=Bmin and
         //do not dl later segs, in order of p_ij
         if (j<j_t){
-            j = (int) (j_t+K_lookahead-1);
-            while (j>=j_t && reqbw>Ct*deltaDownload){
+            j = (int) Math.min(j_t+K_lookahead-1, nb_of_segments)-1;
+            while (j>=j_t && j>time_video+2-1 && reqbw>Ct*deltaDownload){
                 int i;
-                for (int indsorted=1; indsorted<nb_of_nonfulltiles; indsorted++){// at least the most important tile downloaded (but for all K_lookahead -> change?)
-                    i = ind_nonfullbuf.get(indsorted_i.get(indsorted).intValue());
-
-                    //TODO : x_ijl(i,j,:) = zeros(size(x_ijl(i,j,:)));
-                    for (List<List<Double>> m : x_ijl) {
+                //System.out.println("deb "+j + " nb full tiles = "+nb_of_nonfulltiles);
+                for (int indsorted=0; indsorted<nb_of_nonfulltiles; indsorted++){// at least the most important tile downloaded (but for all K_lookahead -> change?)
+                    i = ind_nonfullbuf.get(indsorted_i.get(indsorted));
+                    //System.out.println("ind "+ indsorted + " i : "+i);;
+                    //x_ijl(i,j,:) = zeros(size(x_ijl(i,j,:)));
+                    for (List<List<Double>> m :
+                            x_ijl) {
                         m.get(i).set(j, 0.);
                     }
 
                     reqbws = Matrix.multiplyElementByElementMatrix3D(x_ijl,s_ijl);
                     reqbw = Matrix.matrix3Dsum(reqbws);
+                    //System.out.println(reqbw);
                     if (reqbw <= Ct*deltaDownload){
                         break;
                     }
