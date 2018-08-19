@@ -16,7 +16,12 @@ public class CSVReader {
     private int nb_segments=20;
     private int nb_levels=2;
 
-    public CSVReader(){ }
+    public CSVReader(String filePath, int nbtiles, int nbsegs, int nblvls){
+        this.nb_segments = nbsegs;
+        this.nb_tiles = nbtiles;
+        this.nb_levels = nblvls;
+        this.filePath = filePath;
+    }
 
     public CSVReader(String filePath){
         this.filePath = filePath;
@@ -40,15 +45,9 @@ public class CSVReader {
                 int size = Integer.parseInt(csvRecord.get("Size"));
 
 
-                System.out.println("Record No - " + csvRecord.getRecordNumber());
-                System.out.println("---------------");
-                System.out.println("Quality : " + quality);
-                System.out.println("Segment : " + segment);
-                System.out.println("X : " + x);
-                System.out.println("Y : " + y);
-                System.out.println("Size : " + size);
-                System.out.println("---------------\n\n");
-                fillMatrix3D(matrix3D, quality, segment, x, y, size);
+                System.out.println("Quality : " + quality+" Segment : " + segment+" X : " + x+" Y : " + y+ " Size : " + size);
+
+                fillMatrix3D(matrix3D, quality, segment-1, x, y, size);
             }
         }
         return matrix3D;
@@ -65,7 +64,7 @@ public class CSVReader {
         }
 
         int indexTile = getTileIndex(indexs_xy, m, x, y);
-        System.out.println(x+","+y+": "+indexTile);
+        //System.out.println(x+","+y+": "+indexTile);
         List<Double> line = null;
         if(indexTile >= m.size()){ //add line for tile
             System.err.println("number of tiles greater than given in initialisation : "+x+","+y);
@@ -74,7 +73,7 @@ public class CSVReader {
         }
 
         if(segment>line.size()){
-            System.err.println("number of segements greater than given in initialisation : "+nb_segments);
+            System.err.println("number of segments greater than given in initialisation : "+nb_segments);
         }else{
             line.set(segment, (double) size);
         }

@@ -19,10 +19,17 @@ public class Main {
         List<Double> p_ij = Arrays.asList(ps);
 
         CSVWriter csvWriter = new CSVWriter();
-        CSVReader csvReader = new CSVReader();
+
         List<List<List<Double>>> s_ijl = null;
         try {
             csvWriter.write();
+
+            System.out.println(csvWriter.qualities);
+            CSVReader csvReader = new CSVReader("./sample.csv",
+                    (1+csvWriter.maxX) * (1+csvWriter.maxY),
+                    csvWriter.maxSegmentNumber,
+                    csvWriter.qualities.size());
+
             s_ijl = csvReader.read();
         } catch (IOException e) {
             e.printStackTrace();
