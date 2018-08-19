@@ -341,21 +341,19 @@ public class Matrix {
      * @param filter
      * @return
      */
-    public static List<Double> applyBooleanFilter(List<Double> vector, List<Double> filter) {
-        List<Double> resultVector = new ArrayList<>();
+    public static List<Integer> applyBooleanFilter(List<Double> vector, List<Double> filter) {
+        List<Integer> resultVector = new ArrayList<>();
         for (int i=0; i<vector.size(); i++) {
-            if(filter.get(i).equals(1)){
-                resultVector.add(vector.get(i));
+            if(filter.get(i) != 0.){
+                resultVector.add(i);
             }
         }
         return resultVector;
     }
 
-    public static void setValueAtIndexes(List<Double> vector, List<Double> indexes, double value) {
+    public static void setValueAtIndexes(List<Double> vector, List<Integer> indexes, double value) {
         for (int i=0; i<indexes.size(); i++){
-            if(indexes.get(i).equals(1)){
-                vector.set(i,value);
-            }
+            vector.set(indexes.get(i),value);
         }
     }
 
@@ -567,5 +565,38 @@ public class Matrix {
                 resultIndexes.add(i);
         }
         return resultIndexes;
+    }
+
+    public static List<List<Double>> maximalMatrix(List<List<List<Double>>> matrix3D) {
+        List<List<Double>>  resultMatrix = cloneMatrix(matrix3D.get(0));
+        for (List<List<Double>> matrix :
+                matrix3D) {
+            if(!compareBiggerEqual(resultMatrix, matrix)){
+                resultMatrix = matrix;
+            }
+        }
+        return resultMatrix;
+    }
+
+    public static void setValueInMatrix3DToElementsBiggerThan(List<List<List<Double>>> matrix3D, int compareValue, double value) {
+        for (List<List<Double>> matrix :
+                matrix3D) {
+            setValueInMatrixToElementsBiggerThan(matrix, compareValue, value);
+        }
+    }
+
+    private static void setValueInMatrixToElementsBiggerThan(List<List<Double>> matrix, int compareValue, double value) {
+        for (List<Double> vector :
+                matrix) {
+            setValueInVectorToElementsBiggerThan(vector, compareValue, value);
+        }
+    }
+
+    private static void setValueInVectorToElementsBiggerThan(List<Double> vector, int compareValue, double value) {
+        for (int i=0; i<vector.size(); i++) {
+            if(vector.get(i)>compareValue){
+                vector.set(i, value);
+            }
+        }
     }
 }

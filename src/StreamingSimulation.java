@@ -10,7 +10,7 @@ public class StreamingSimulation {
     private int nb_of_tiles = 4;
     private int nb_of_segments = 20;
     private double seg_duration = 1;
-    private double deltaDownload = seg_duration * K_lookahead;
+    private double deltaDownload = seg_duration *1; //* K_lookahead;
 
     private List<List<Double>> tile_centers_xy; // matrix of 4 lines containing each 2 columns
     private double tilecenter_offset;
@@ -49,9 +49,8 @@ public class StreamingSimulation {
         List<List<List<Double>>> s_ijl = Matrix.create3DMatrix(nb_of_segments,nb_of_tiles,nb_of_levels,1);
         Matrix.multiply3D(tile_size, s_ijl);
 
-        List<List<Double>> tmp_matrix = Matrix.getPage(s_ijl,2-1);
+        List<List<Double>> tmp_matrix = Matrix.getPage(s_ijl,0);
         Matrix.multiplyMatrix(0.5, tmp_matrix );
-        s_ijl.set(1,tmp_matrix);
 
 
         List<Double> bw_trace = Matrix.createVector(((int) floor(duration/seg_duration)), 1);
@@ -60,7 +59,6 @@ public class StreamingSimulation {
         //---Streaming start---//
         double time_user=0; // counted in number of segments
         double time_video=0; // counted in number of segments played out so far
-        int seg_played=0;
 
         List<List<List<Double>>> buf_it = Matrix.create3DMatrix(Bmax+2,nb_of_tiles,nb_of_levels,1);
         Matrix.multiply3D(-3, buf_it); // stores the segments index, j, 1st level 0 means no seg
@@ -92,7 +90,7 @@ public class StreamingSimulation {
         double total_stalltime=0;
 
 
-        while (seg_played<nb_of_segments){
+        while (time_video<nb_of_segments){
             //-- prepare for dl decision
             FoV_xy = generateNewFOV(FoV_xy);
             List<List<Double>> repmat = Matrix.repeatMatrix(FoV_xy,nb_of_tiles-1,0);
@@ -104,21 +102,24 @@ public class StreamingSimulation {
             List<Double> p_ij = Matrix.divideMatrix(diff,Matrix.vectorSum(diff));
 
 
-            List<List<Double>> j_ti = Matrix.minimalMatrix(buf_it);
+            List<List<Double>> j_ti = Matrix.maximalMatrix(buf_it);
             List<Double> j_ti_min = Matrix.minValueOfEachRow(j_ti);
 
-            //j_ti(j_ti==(nb_of_segments+3))=time_video;
-            List<Double> boolVector = Matrix.compareEqual(j_ti_min,(nb_of_segments+3));
-            List<Double> indexes = Matrix.applyBooleanFilter(j_ti_min, boolVector);
-            Matrix.setValueAtIndexes(j_ti_min,indexes,time_video);
+            //not there :>    j_ti=max(j_ti(:,2:end),[],2);
 
-            Matrix.add(1,j_ti_min);
+            //j_ti(j_ti==(-3))=time_video+1;
+            //j_ti=j_ti+1;
+            List<Double> boolVector = Matrix.compareEqual(j_ti_min,-3.);
+            List<Integer> indexes = Matrix.applyBooleanFilter(j_ti_min, boolVector);
+            Matrix.setValueAtIndexes(j_ti_min,indexes,time_video+1);
+
+            j_ti_min = Matrix.add(1,j_ti_min);
             double j_t = Matrix.minVector(j_ti_min);
 
-
             //-- make dl decision
-            List<List<List<Double>>> x_ijl = instant_optim(K_lookahead,deltaDownload,p_ij,s_ijl,Ct,buf_it,j_ti_min,Bmin,Bmax,time_video);
 
+            List<List<List<Double>>> x_ijl = instant_optim(K_lookahead,deltaDownload,p_ij,s_ijl,Ct,buf_it,j_ti_min,Bmin,Bmax,time_video);
+            Matrix.printMatrix3D(x_ijl);
             //-- buffers states after dl finished (right before next download attempt)
 
             dlded_size = Matrix.multiplyElementByElementMatrix(x_ijl.get(0),s_ijl.get(0));
@@ -142,7 +143,8 @@ public class StreamingSimulation {
             List<List<Integer>> played_qualities_int = Matrix.cloneMatrixInteger(played_qualities);
             List<List<List<Integer>>> x_ijl_int =  Matrix.DoubleMatrix3DtoInteger(x_ijl);
             List<Integer> j_ti_min_int = Matrix.cloneVectorToInteger(j_ti_min);
-            updateBufferStates(buf_it_int,played_qualities_int,x_ijl_int,j_ti_min_int,time_to_dl,K_lookahead,time_video,Bmax);
+
+            //updateBufferStates(buf_it_int,played_qualities_int,x_ijl_int,j_ti_min_int,time_to_dl,K_lookahead,time_video,Bmax);
 
             //-- update bw estimate
             truedl_rate = bw_trace.subList((int)time_user-1, ((int)(time_user+time_to_dl-1-1)) );
@@ -152,10 +154,11 @@ public class StreamingSimulation {
             time_user = time_user + deltaDownload + Math.ceil(stall_time/seg_duration);
             time_video = time_video+time_to_dl-stall_time;
 
+            Matrix.printMatrix3D(x_ijl);
+
         }
 
     }
-
 
     private void updateBufferStates(List<List<List<Integer>>> buf_it, List<List<Integer>> played_qualities, List<List<List<Integer>>> x_ijl, List<Integer> j_ti,
                                     double time_to_dl, int K_lookahead, double time_video, int Bmax){ //update buf_it and played_qualities
@@ -276,7 +279,7 @@ public class StreamingSimulation {
 
     public List<List<List<Double>>> instant_optim(double K_lookahead, double deltaDownload,
                                                    List<Double> p_ij, List<List<List<Double>>> s_ijl, double Ct, List<List<List<Double>>> buf_it,
-                                                   List<Double> j_ti, double Bmin, double Bmax, double time_video){ //give [x_ijl]=
+                                                   List<Double> j_ti, double Bmin, double Bmax, double time_video){
         nb_of_tiles = s_ijl.get(0).size();
         nb_of_segments = s_ijl.get(0).get(0).size();
         nb_of_levels = s_ijl.size();
@@ -285,11 +288,10 @@ public class StreamingSimulation {
 
         //-- temporary transform
         List<List<List<Double>>> buf_tmp = buf_it;
-        Matrix.setValueInMatrix3DToElementsSmallerThan(buf_tmp,(nb_of_segments+3),1);
-        Matrix.setValueInMatrix3DToElementsEqualTo(buf_tmp,(nb_of_segments+3),0);
+        Matrix.setValueInMatrix3DToElementsBiggerThan(buf_tmp,-3,1);
+        Matrix.setValueInMatrix3DToElementsEqualTo(buf_tmp,-3,0);
 
         //-- end of temporary transform
-
         List<List<Double>> matrixSum = Matrix.sumOfEachMatrix(buf_tmp);
         List<Double> sumEachRow = Matrix.vectorSumOfEachRowInMatrix(matrixSum);
         List<Integer> ind_nonfullbuf = Matrix.getIndexOfValuesSmallerThan(sumEachRow, Bmax);
@@ -323,16 +325,17 @@ public class StreamingSimulation {
         List<Double> psorted_i = Matrix.cloneVector(p_ij);
         Collections.sort(psorted_i);
         List<Integer> indsorted_i = Matrix.cloneVectorInteger(ind_nonfullbuf);
-        for (int i=0; i<psorted_i.size(); i++) {
-            double currentValue = psorted_i.get(i);
-            for (int index=0; index<p_ij.size(); index++) { // get the old index of where the sorted value was
-                if(currentValue == p_ij.get(index)){
-                    indsorted_i.set(i, index);
-                    break;
+        if(indsorted_i.size()>0){
+            for (int i=0; i<psorted_i.size(); i++) {
+                double currentValue = psorted_i.get(i);
+                for (int index=0; index<p_ij.size(); index++) { // get the old index of where the sorted value was
+                    if(currentValue == p_ij.get(index)){
+                        indsorted_i.set(i, index);
+                        break;
+                    }
                 }
             }
         }
-
 
         //-- If needed, decrease quality on most future segs then with lowest prob
         //to be watched, still satisfing buf size(i)>=Bmin at the end of dl

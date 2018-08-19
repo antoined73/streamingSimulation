@@ -7,8 +7,9 @@ public class Main {
     public static void main(String[] args) {
 
         StreamingSimulation ss = new StreamingSimulation();
-        //ss.startStreaming();
+        ss.startStreaming();
 
+        /**
         int k_lookahead = 3;
         int deltaDl = 1;
         Double[] ps= {0.342535707281441,
@@ -25,7 +26,7 @@ public class Main {
             }
         }
         double Ct = 1000000;
-        List<List<List<Double>>> buf_it = Matrix.create3DMatrix(7, 4,2,23);
+        List<List<List<Double>>> buf_it = Matrix.create3DMatrix(7, 4, 2, -3);
         for (List<Double> line :
                 buf_it.get(0)) {
             line.set(0,1.);
@@ -36,6 +37,6 @@ public class Main {
         int Bmax = 5;
         double time_video = 0.;
         List<List<List<Double>>> testMat = ss.instant_optim(k_lookahead,deltaDl,p_ij,s_ijl,Ct,buf_it,j_ti,Bmin,Bmax,time_video);
-        Matrix.printMatrix3D(testMat);
+        Matrix.printMatrix3D(testMat);**/
     }
 }
