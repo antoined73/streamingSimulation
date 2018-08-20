@@ -6,10 +6,27 @@ public class Main {
 
     public static void main(String[] args) {
 
-        StreamingSimulation ss = new StreamingSimulation();
-        //ss.startStreaming();
+        CSVWriter csvWriter = new CSVWriter();
+        List<List<List<Double>>> s_ijl = null;
+        try {
+            csvWriter.write();
 
+            System.out.println(csvWriter.qualities);
+            CSVReader csvReader = new CSVReader("./sample.csv",
+                    (1+csvWriter.maxX) * (1+csvWriter.maxY),
+                    csvWriter.maxSegmentNumber,
+                    csvWriter.qualities.size());
 
+            s_ijl = csvReader.read();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        Matrix.printMatrix3D(s_ijl);
+        StreamingSimulation ss = new StreamingSimulation(s_ijl);
+        ss.startStreaming();
+
+        /***
         int k_lookahead = 3;
         int deltaDl = 1;
         Double[] ps= {0.342535707281441,
@@ -37,14 +54,14 @@ public class Main {
 
         Matrix.printMatrix3D(s_ijl);
 
-        /***
+
         List<List<List<Double>>> s_ijl = Matrix.create3DMatrix(20,4,2,150000);
         for (List<Double> v :
                 s_ijl.get(1)) {
             for (int i=0; i<v.size(); i++) {
                 v.set(i, v.get(i)*2);
             }
-        }**/
+        }
 
         double Ct = 1000000;
         List<List<List<Double>>> buf_it = Matrix.create3DMatrix(7, 4, 2, -3);
@@ -60,6 +77,6 @@ public class Main {
 
 
         List<List<List<Double>>> testMat = ss.instant_optim(k_lookahead,deltaDl,p_ij,s_ijl,Ct,buf_it,j_ti,Bmin,Bmax,time_video);
-        Matrix.printMatrix3D(testMat);
+        Matrix.printMatrix3D(testMat);***/
     }
 }

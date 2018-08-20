@@ -16,8 +16,15 @@ public class StreamingSimulation {
     private double tilecenter_offset;
     List<Double> x, y; //float[2] sizes of the video square
 
+    List<List<List<Double>>> s_ijl;
 
-    public StreamingSimulation(){
+
+    public StreamingSimulation(List<List<List<Double>>> s_ijl){
+        this.s_ijl = s_ijl;
+        nb_of_levels = s_ijl.size();
+        nb_of_tiles = s_ijl.get(0).size();
+        nb_of_segments = s_ijl.get(0).get(0).size();
+
         tile_centers_xy = Matrix.createMatrix(2,nb_of_tiles,0);
         tilecenter_offset = 1/(2*sqrt(nb_of_tiles));
 
@@ -46,7 +53,7 @@ public class StreamingSimulation {
         int Bmin=2;
         int Bmax=5;
 
-        List<List<List<Double>>> s_ijl = Matrix.create3DMatrix(nb_of_segments,nb_of_tiles,nb_of_levels,1);
+        //List<List<List<Double>>> s_ijl = Matrix.create3DMatrix(nb_of_segments,nb_of_tiles,nb_of_levels,1);
         Matrix.multiply3D(tile_size, s_ijl);
 
         List<List<Double>> tmp_matrix = Matrix.getPage(s_ijl,0);
@@ -128,7 +135,7 @@ public class StreamingSimulation {
             double time_to_dl = computeDlDelay(dlded_size_sum,bw_trace,time_user); //counted in segments
 
             //-- temporary transform
-            List<List<List<Double>>> buf_tmp = buf_it;
+            List<List<List<Double>>> buf_tmp = Matrix.cloneMatrix3D(buf_it);
             Matrix.setValueInMatrix3DToElementsSmallerThan(buf_tmp,(nb_of_segments+3),1);
             Matrix.setValueInMatrix3DToElementsEqualTo(buf_tmp,(nb_of_segments+3),0);
 
@@ -144,7 +151,7 @@ public class StreamingSimulation {
             List<List<List<Integer>>> x_ijl_int =  Matrix.DoubleMatrix3DtoInteger(x_ijl);
             List<Integer> j_ti_min_int = Matrix.cloneVectorToInteger(j_ti_min);
 
-            //updateBufferStates(buf_it_int,played_qualities_int,x_ijl_int,j_ti_min_int,time_to_dl,K_lookahead,time_video,Bmax);
+            updateBufferStates(buf_it_int,played_qualities_int,x_ijl_int,j_ti_min_int,time_to_dl,K_lookahead,time_video,Bmax);
 
             //-- update bw estimate
             truedl_rate = bw_trace.subList((int)time_user-1, ((int)(time_user+time_to_dl-1-1)) );
@@ -287,7 +294,7 @@ public class StreamingSimulation {
 
 
         //-- temporary transform
-        List<List<List<Double>>> buf_tmp = buf_it;
+        List<List<List<Double>>> buf_tmp = Matrix.cloneMatrix3D(buf_it);
         Matrix.setValueInMatrix3DToElementsBiggerThan(buf_tmp,-3,1);
         Matrix.setValueInMatrix3DToElementsEqualTo(buf_tmp,-3,0);
 

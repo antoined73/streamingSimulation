@@ -599,4 +599,13 @@ public class Matrix {
             }
         }
     }
+
+    public static List<List<List<Double>>> cloneMatrix3D(List<List<List<Double>>> matrix3D) {
+        List<List<List<Double>>> resultMatrix3D = new ArrayList<>();
+        for (List<List<Double>> m :
+               matrix3D ) {
+            resultMatrix3D.add(cloneMatrix(m));
+        }
+        return resultMatrix3D;
+    }
 }
