@@ -43,13 +43,13 @@ public class CSVWriter {
 
             for (int i = 0; i < listOfFiles.length; i++) {
                 if (listOfFiles[i].isFile() && listOfFiles[i].getName().endsWith(".m4s") && !listOfFiles[i].getName().contains("audio")) {
-                    //invasion-720x576-0111__track1_168.m4s
+                    //example of name : invasion-720x576-0111__track1_168.m4s
 
                     String fileName = listOfFiles[i].getName().substring(0,listOfFiles[i].getName().length()-4);
                     //quality
                     String[] fileNameParts = fileName.split("-");
                     if(!qualities.contains(fileNameParts[1])){
-                        System.out.println(fileNameParts[1]);
+                        //System.out.println(fileNameParts[1]);
                         if(qualities.size()==0)
                             qualities.add(fileNameParts[1]);
                         else{

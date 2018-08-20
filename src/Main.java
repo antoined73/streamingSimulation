@@ -21,8 +21,9 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
+        System.out.println("s_ijl");
         Matrix.printMatrix3D(s_ijl);
+        System.out.println("------------");
         StreamingSimulation ss = new StreamingSimulation(s_ijl);
         ss.startStreaming();
 

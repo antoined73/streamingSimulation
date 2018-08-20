@@ -47,14 +47,14 @@ public class StreamingSimulation {
 
     public void startStreaming(){
 
-        double tile_size = 300 * Math.pow(10,3); //TODO : Get Tile size in .csv
+        //double tile_size = 300 * Math.pow(10,3); //TODO : Get Tile size in .csv
         double duration= 10 * nb_of_segments * seg_duration;
         double cst_bw = 1* Math.pow(10,6);
         int Bmin=2;
         int Bmax=5;
 
         //List<List<List<Double>>> s_ijl = Matrix.create3DMatrix(nb_of_segments,nb_of_tiles,nb_of_levels,1);
-        Matrix.multiply3D(tile_size, s_ijl);
+        //Matrix.multiply3D(tile_size, s_ijl);
 
         List<List<Double>> tmp_matrix = Matrix.getPage(s_ijl,0);
         Matrix.multiplyMatrix(0.5, tmp_matrix );
@@ -126,7 +126,7 @@ public class StreamingSimulation {
             //-- make dl decision
 
             List<List<List<Double>>> x_ijl = instant_optim(K_lookahead,deltaDownload,p_ij,s_ijl,Ct,buf_it,j_ti_min,Bmin,Bmax,time_video);
-            Matrix.printMatrix3D(x_ijl);
+
             //-- buffers states after dl finished (right before next download attempt)
 
             dlded_size = Matrix.multiplyElementByElementMatrix(x_ijl.get(0),s_ijl.get(0));
@@ -151,7 +151,7 @@ public class StreamingSimulation {
             List<List<List<Integer>>> x_ijl_int =  Matrix.DoubleMatrix3DtoInteger(x_ijl);
             List<Integer> j_ti_min_int = Matrix.cloneVectorToInteger(j_ti_min);
 
-            updateBufferStates(buf_it_int,played_qualities_int,x_ijl_int,j_ti_min_int,time_to_dl,K_lookahead,time_video,Bmax);
+            //updateBufferStates(buf_it_int,played_qualities_int,x_ijl_int,j_ti_min_int,time_to_dl,K_lookahead,time_video,Bmax);
 
             //-- update bw estimate
             truedl_rate = bw_trace.subList((int)time_user-1, ((int)(time_user+time_to_dl-1-1)) );
@@ -159,8 +159,8 @@ public class StreamingSimulation {
 
             //-- update times
             time_user = time_user + deltaDownload + Math.ceil(stall_time/seg_duration);
-            time_video = time_video+time_to_dl-stall_time;
-
+            time_video += time_to_dl-stall_time;
+            System.out.println(time_video);
             Matrix.printMatrix3D(x_ijl);
 
         }
@@ -317,7 +317,8 @@ public class StreamingSimulation {
             int indexMaxDl = (int) Math.min(j_t+K_lookahead, j_ti.get(i)+Bmax-bufsize_i.get(i)) -1;
 
             for(int y= j_ti.get(i).intValue()-1; y< indexMaxDl; y++){
-                x_ijl.get(nb_of_levels-1).get(i).set(y, 1.);
+                if(y< x_ijl.get(nb_of_levels-1).get(i).size())
+                    x_ijl.get(nb_of_levels-1).get(i).set(y, 1.);
             }
 
             double newValue = j_ti.get(i)+(Bmin -bufsize_i.get(i))/deltaDownload;

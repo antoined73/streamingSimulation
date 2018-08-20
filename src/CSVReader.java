@@ -45,7 +45,7 @@ public class CSVReader {
                 int size = Integer.parseInt(csvRecord.get("Size"));
 
 
-                System.out.println("Quality : " + quality+" Segment : " + segment+" X : " + x+" Y : " + y+ " Size : " + size);
+                //System.out.println("Quality : " + quality+" Segment : " + segment+" X : " + x+" Y : " + y+ " Size : " + size);
 
                 fillMatrix3D(matrix3D, quality, segment-1, x, y, size);
             }
