@@ -6,16 +6,13 @@ public class Main {
 
     public static void main(String[] args) {
 
-        CSVWriter csvWriter = new CSVWriter();
         List<List<List<Double>>> s_ijl = null;
         try {
-            csvWriter.write();
 
-            System.out.println(csvWriter.qualities);
             CSVReader csvReader = new CSVReader("./sample.csv",
-                    (1+csvWriter.maxX) * (1+csvWriter.maxY),
-                    csvWriter.maxSegmentNumber,
-                    csvWriter.qualities.size());
+                    4,
+                    177,
+                    5);
 
             s_ijl = csvReader.read();
         } catch (IOException e) {

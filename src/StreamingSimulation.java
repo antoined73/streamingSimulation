@@ -151,7 +151,7 @@ public class StreamingSimulation {
             List<List<List<Integer>>> x_ijl_int =  Matrix.DoubleMatrix3DtoInteger(x_ijl);
             List<Integer> j_ti_min_int = Matrix.cloneVectorToInteger(j_ti_min);
 
-            //updateBufferStates(buf_it_int,played_qualities_int,x_ijl_int,j_ti_min_int,time_to_dl,K_lookahead,time_video,Bmax);
+            updateBufferStates(buf_it_int,played_qualities_int,x_ijl_int,j_ti_min_int,time_to_dl,K_lookahead,time_video,Bmax);
 
             //-- update bw estimate
             truedl_rate = bw_trace.subList((int)time_user-1, ((int)(time_user+time_to_dl-1-1)) );
@@ -169,8 +169,8 @@ public class StreamingSimulation {
 
     private void updateBufferStates(List<List<List<Integer>>> buf_it, List<List<Integer>> played_qualities, List<List<List<Integer>>> x_ijl, List<Integer> j_ti,
                                     double time_to_dl, int K_lookahead, double time_video, int Bmax){ //update buf_it and played_qualities
-        this.nb_of_tiles = x_ijl.size();
-        this.nb_of_segments = x_ijl.get(0).size();
+        this.nb_of_tiles = x_ijl.get(0).size();
+        this.nb_of_segments = x_ijl.get(0).get(0).size();
 
         int j_t = j_ti.stream().min(Comparator.naturalOrder()).orElse(0);
 
@@ -179,9 +179,9 @@ public class StreamingSimulation {
         for (List<List<Integer>> aBuf_tmp1 : buf_tmp) {
             for (int j = 0; j < aBuf_tmp1.size(); ++j) {
                 for (int k = 0; k < aBuf_tmp1.get(j).size(); ++k) {
-                    if (aBuf_tmp1.get(j).get(k) < nb_of_segments + 3) {
+                    if (aBuf_tmp1.get(j).get(k) > 0) {
                         aBuf_tmp1.get(j).set(k, 1);
-                    } else if (aBuf_tmp1.get(j).get(k) == nb_of_segments + 3) {
+                    } else {
                         aBuf_tmp1.get(j).set(k, 0);
                     }
                 }
@@ -192,10 +192,14 @@ public class StreamingSimulation {
         List<Integer> bufsize_i = new ArrayList<>();
         {
             List<List<Integer>> tmp = new LinkedList<>();
-            for (List<List<Integer>> aBuf_tmp : buf_tmp) {
+			for (int j = 0 ; j < buf_tmp.get(0).size() ; ++j) {
                 List<Integer> tmp2 = new LinkedList<>();
-                for (List<Integer> anABuf_tmp : aBuf_tmp) {
-                    tmp2.add(anABuf_tmp.stream().mapToInt(t -> t).sum());
+				for (int k = 0 ; k < buf_tmp.get(0).get(j).size() ; ++k) {
+				    List<Integer> tmp3 = new ArrayList<>();
+                    for (int i = 0; i < buf_tmp.size(); ++i) {
+                        tmp3.add(buf_tmp.get(i).get(j).get(k));
+                    }
+                    tmp2.add(tmp3.stream().mapToInt(t -> t).sum());
                 }
                 tmp.add(tmp2);
             }
@@ -209,10 +213,10 @@ public class StreamingSimulation {
         for (int i = 0 ; i < nb_of_tiles; ++i) {
             int ind_placeinbuf = 0;
             for (int j = j_ti.get(i); j < j_t + K_lookahead -1; ++j) {
-            	for (int k = 0 ;
-                     k < x_ijl.get(i).get(j).size() ; ++k) {
-            	    if (x_ijl.get(i).get(j).get(k) == 1) {
-            	        buf_tmp.get(i).get(bufsize_i.get(i) + ind_placeinbuf).set(k, j);
+            	for (int k = 0 ; k < nb_of_levels ; ++k) {
+            	    if (x_ijl.get(k).get(i).get(j) == 1) {
+            	        //buf_tmp.get(i).get(bufsize_i.get(i) + ind_placeinbuf).set(k, j);
+                        buf_tmp.get(k).get(i).set(bufsize_i.get(i) + ind_placeinbuf, j);
                     }
                 }
                 ind_placeinbuf++;
@@ -222,13 +226,15 @@ public class StreamingSimulation {
         //-- then drain: everything that has been read in max(deltaDownload,time_to_dl)
 	    for (int played_seg = (int)time_video ; played_seg < (int)time_video + time_to_dl ; ++played_seg) {
             for (int i = 0 ; i < nb_of_tiles ; ++i) {
-                int finalPlayed_seg = played_seg;
-                int finalI = i;
-                buf_tmp.get(i).get(played_seg - (int)time_video)
-                        .stream()
-                        .filter(d -> d.equals(finalPlayed_seg))
-                        .findFirst()
-                        .ifPresent(t -> played_qualities.get(finalI).set(finalPlayed_seg, t));
+                int ind_l = -1;
+                for (int k = 0 ; k < nb_of_levels ; ++k) {
+                    if (buf_tmp.get(k).get(i).get(played_seg-(int)time_video) == played_seg) {
+                        ind_l = k;
+                        break;
+                    }
+                }
+                if (ind_l > 0)
+					played_qualities.get(i).set(played_seg, ind_l);
             }
         }
 
@@ -237,14 +243,18 @@ public class StreamingSimulation {
             List<List<Integer>> tmp = new ArrayList<>();
 	        int lim = (int) Math.min(time_to_dl + Bmax + 2, buf_tmp.get(i).size());
 	    	for (int j = (int) time_to_dl; j < lim ; ++j) {
-				tmp.add(new ArrayList<>(buf_tmp.get(i).get(j)));
+	    	    List<Integer> tmp2 = new ArrayList<>();
+                for (int k = 0 ; i < nb_of_levels ; ++k) {
+                    tmp2.add(buf_tmp.get(k).get(i).get(j));
+                }
+                tmp.add(tmp2);
             }
             buf_it.add(tmp);
         }
         for (int i = 0 ; i < buf_it.size() ; ++i) {
             for (int j = buf_it.get(i).size() ; j < Bmax + 2 ; ++j) {
                 for (int k = 0 ; k < buf_it.get(i).get(j).size() ; ++k) {
-                    buf_it.get(i).get(j).set(k, nb_of_segments + 3);
+                    buf_it.get(k).get(i).set(j, nb_of_segments + 3);
                 }
             }
         }
