@@ -216,9 +216,27 @@ public class Matrix {
         return clonedMatrix;
     }
 
+	private static List<List<Integer>> cloneMatrixInt(List<List<Integer>> matrix) {
+        List<List<Integer>> clonedMatrix = new ArrayList<>();
+        for (List<Integer> row:
+             matrix) {
+            clonedMatrix.add(cloneVectorInt(row));
+        }
+        return clonedMatrix;
+    }
+
     public static List<Double> cloneVector(List<Double> vector) {
         List<Double> clonedVector = new ArrayList<>();
         for (Double d :
+                vector) {
+            clonedVector.add(d);
+        }
+        return clonedVector;
+    }
+
+	public static List<Integer> cloneVectorInt(List<Integer> vector) {
+        List<Integer> clonedVector = new ArrayList<>();
+        for (Integer d :
                 vector) {
             clonedVector.add(d);
         }
@@ -605,6 +623,15 @@ public class Matrix {
         for (List<List<Double>> m :
                matrix3D ) {
             resultMatrix3D.add(cloneMatrix(m));
+        }
+        return resultMatrix3D;
+    }
+
+	public static List<List<List<Integer>>> cloneMatrix3DInt(List<List<List<Integer>>> matrix3D) {
+        List<List<List<Integer>>> resultMatrix3D = new ArrayList<>();
+        for (List<List<Integer>> m :
+               matrix3D ) {
+            resultMatrix3D.add(cloneMatrixInt(m));
         }
         return resultMatrix3D;
     }

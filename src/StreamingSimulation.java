@@ -73,7 +73,7 @@ public class StreamingSimulation {
 
         List<List<Double>> page = Matrix.getPage(buf_it, 0);
         for(int col=0; col < nb_of_startupseg; col++){ //iterate throught the columns from 0 to nb_of_startupseg
-            int currentNumber = 1;
+            int currentNumber = 0;
             List<Double> column = Matrix.getColumn(page,col);
             for(int row=0; row < column.size(); row++){
                 Matrix.setMatrix3DValue(buf_it, col, row,0, currentNumber);
@@ -81,7 +81,7 @@ public class StreamingSimulation {
             }
         }
         // Startup period
-        List<List<Double>> played_qualities = Matrix.createMatrix(nb_of_tiles,nb_of_segments,0);
+        List<List<Double>> played_qualities = Matrix.createMatrix(nb_of_segments,nb_of_tiles,-1);
         List<List<Double>> dlded_size = Matrix.getUnderMatrixColumnIteration( Matrix.getPage(s_ijl,1), 1-1 , nb_of_startupseg-1);
         double dlded_size_sum = Matrix.matrixSum(dlded_size);
 
@@ -175,18 +175,18 @@ public class StreamingSimulation {
         int j_t = j_ti.stream().min(Comparator.naturalOrder()).orElse(0);
 
         //temporary transform
-        List<List<List<Integer>>> buf_tmp = new ArrayList<>(buf_it);
-        for (List<List<Integer>> aBuf_tmp1 : buf_tmp) {
-            for (int j = 0; j < aBuf_tmp1.size(); ++j) {
-                for (int k = 0; k < aBuf_tmp1.get(j).size(); ++k) {
-                    if (aBuf_tmp1.get(j).get(k) > 0) {
-                        aBuf_tmp1.get(j).set(k, 1);
-                    } else {
-                        aBuf_tmp1.get(j).set(k, 0);
-                    }
-                }
-            }
-        }
+        List<List<List<Integer>>> buf_tmp = Matrix.cloneMatrix3DInt(buf_it);
+        buf_tmp.forEach(
+                p -> p.forEach(
+                        r -> {
+                            for (int i = 0; i < r.size(); i++) {
+                                if (r.get(i) >= 0) {
+                                    r.set(i, 1);
+                                } else {
+                                    r.set(i, 0);
+                                }
+                            }
+                        }));
         //end of temporary transform
 
         List<Integer> bufsize_i = new ArrayList<>();
@@ -209,14 +209,13 @@ public class StreamingSimulation {
         }
 
         //-- first fill: everything that was scheduled for dl
-        buf_tmp = new ArrayList<>(buf_it);
+        buf_tmp = Matrix.cloneMatrix3DInt(buf_it);
         for (int i = 0 ; i < nb_of_tiles; ++i) {
             int ind_placeinbuf = 0;
             for (int j = j_ti.get(i); j < j_t + K_lookahead -1; ++j) {
             	for (int k = 0 ; k < nb_of_levels ; ++k) {
             	    if (x_ijl.get(k).get(i).get(j) == 1) {
-            	        //buf_tmp.get(i).get(bufsize_i.get(i) + ind_placeinbuf).set(k, j);
-                        buf_tmp.get(k).get(i).set(bufsize_i.get(i) + ind_placeinbuf, j);
+                        buf_tmp.get(k).get(i).set(bufsize_i.get(i) + ind_placeinbuf - 1, j);
                     }
                 }
                 ind_placeinbuf++;
@@ -228,33 +227,24 @@ public class StreamingSimulation {
             for (int i = 0 ; i < nb_of_tiles ; ++i) {
                 int ind_l = -1;
                 for (int k = 0 ; k < nb_of_levels ; ++k) {
-                    if (buf_tmp.get(k).get(i).get(played_seg-(int)time_video) == played_seg) {
+                    int tmp = buf_tmp.get(k).get(i).get(played_seg - (int) time_video);
+                    if (tmp == played_seg) {
                         ind_l = k;
                         break;
                     }
                 }
-                if (ind_l > 0)
+                if (ind_l >= 0)
 					played_qualities.get(i).set(played_seg, ind_l);
             }
         }
 
         buf_it.clear();
-	    for (int i = 0 ; i < buf_tmp.size() ; ++i) {
-            List<List<Integer>> tmp = new ArrayList<>();
-	        int lim = (int) Math.min(time_to_dl + Bmax + 2, buf_tmp.get(i).size());
-	    	for (int j = (int) time_to_dl; j < lim ; ++j) {
-	    	    List<Integer> tmp2 = new ArrayList<>();
-                for (int k = 0 ; i < nb_of_levels ; ++k) {
-                    tmp2.add(buf_tmp.get(k).get(i).get(j));
-                }
-                tmp.add(tmp2);
-            }
-            buf_it.add(tmp);
-        }
-        for (int i = 0 ; i < buf_it.size() ; ++i) {
+	    buf_it.addAll(Matrix.cloneMatrix3DInt(buf_tmp));
+
+        for (int i = 0 ; i < nb_of_tiles ; ++i) {
             for (int j = buf_it.get(i).size() ; j < Bmax + 2 ; ++j) {
-                for (int k = 0 ; k < buf_it.get(i).get(j).size() ; ++k) {
-                    buf_it.get(k).get(i).set(j, nb_of_segments + 3);
+                for (int k = 0 ; k < nb_of_levels ; ++k) {
+                    buf_it.get(k).get(i).set(j, -3);
                 }
             }
         }
