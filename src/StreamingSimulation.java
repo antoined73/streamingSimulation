@@ -123,12 +123,11 @@ public class StreamingSimulation {
             j_ti_min = Matrix.add(1,j_ti_min);
             double j_t = Matrix.minVector(j_ti_min);
 
-            //-- make dl decision
 
+            //-- make dl decision
             List<List<List<Double>>> x_ijl = instant_optim(K_lookahead,deltaDownload,p_ij,s_ijl,Ct,buf_it,j_ti_min,Bmin,Bmax,time_video);
 
             //-- buffers states after dl finished (right before next download attempt)
-
             dlded_size = Matrix.multiplyElementByElementMatrix(x_ijl.get(0),s_ijl.get(0));
 
             dlded_size_sum = Matrix.matrixSum(dlded_size);
@@ -140,7 +139,6 @@ public class StreamingSimulation {
             Matrix.setValueInMatrix3DToElementsEqualTo(buf_tmp,(nb_of_segments+3),0);
 
             //-- end of temporary transform
-
             double cursizebuf_min= Matrix.minVector(Matrix.sumOfEachRow(Matrix.sumOfEachMatrix(buf_tmp)));
             double stall_time = Math.max(0,time_to_dl-cursizebuf_min);
             total_stalltime=total_stalltime+stall_time;
@@ -214,7 +212,7 @@ public class StreamingSimulation {
             int ind_placeinbuf = 0;
             for (int j = j_ti.get(i); j < j_t + K_lookahead -1; ++j) {
             	for (int k = 0 ; k < nb_of_levels ; ++k) {
-            	    if (x_ijl.get(k).get(i).get(j) == 1) {
+            	    if (j<x_ijl.get(k).get(i).size() && x_ijl.get(k).get(i).get(j) == 1) {
                         buf_tmp.get(k).get(i).set(bufsize_i.get(i) + ind_placeinbuf - 1, j);
                     }
                 }
