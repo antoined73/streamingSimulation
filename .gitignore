@@ -18,3 +18,9 @@ basic-projet\.iml
 target/classes/
 
 sample\.csv
+
+\.idea/
+
+*.class
+
+*.iml
